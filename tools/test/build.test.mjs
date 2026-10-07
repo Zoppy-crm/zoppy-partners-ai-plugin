@@ -37,6 +37,14 @@ test('name diferente da pasta, campo não portável e travessão', () => {
     assert.match(problems, /travessão/);
 });
 
+test('description sem aspas com ": " é YAML inválido e é barrada; entre aspas passa', () => {
+    const root = makeRepo();
+    const broken = makeSkill(root, 'zoppy-partners-x', 'name: zoppy-partners-x\ndescription: Faz X. Gatilhos: pedido, frete.');
+    assert.match(lintSkill(broken).join('\n'), /YAML inválido/);
+    const quoted = makeSkill(root, 'zoppy-partners-y', 'name: zoppy-partners-y\ndescription: "Faz Y. Gatilhos: pedido, frete."');
+    assert.deepEqual(lintSkill(quoted), []);
+});
+
 test('token JWT em exemplo é barrado', () => {
     const root = makeRepo();
     const dir = makeSkill(root, 'zoppy-partners-x', 'name: zoppy-partners-x\ndescription: d');

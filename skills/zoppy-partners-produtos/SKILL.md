@@ -1,6 +1,6 @@
 ---
 name: zoppy-partners-produtos
-description: Cadastra e mantém produtos na Partners API da Zoppy (POST, GET, PUT e DELETE em /products) e liga o produto ao item do pedido. Use ao gerar código que cria, busca, atualiza, sincroniza ou exclui produto, ao montar lineItems de pedido com productId, ao decidir entre POST e PUT no reenvio, ou ao depurar preço arredondado, categoria sumida, produto duplicado ou item de pedido que não aparece. Gatilhos PT, cadastrar produto na Zoppy, sincronizar catálogo, atualizar preço, categorias do produto, externalId do produto, productId do item do pedido. Gatilhos EN, Zoppy product API, create product, sync catalog, update product price, product categories, order line item productId. Não use para autenticação, base URL e paginação em geral (veja zoppy-partners-api), clientes (zoppy-partners-clientes), valores, datas e status do pedido (zoppy-partners-pedidos), carrinho abandonado (zoppy-partners-carrinho-abandonado) nem cupons e webhooks (zoppy-partners-cupons-webhooks).
+description: "Cadastra e mantém produtos na Partners API da Zoppy (POST, GET, PUT e DELETE em /products) e liga o produto ao item do pedido. Use ao gerar código que cria, busca, atualiza, sincroniza ou exclui produto, ao montar lineItems de pedido com productId, ao decidir entre POST e PUT no reenvio, ou ao depurar preço arredondado, categoria sumida, produto duplicado ou item de pedido que não aparece. Gatilhos: cadastrar produto na Zoppy, sincronizar catálogo, atualizar preço, categorias do produto, externalId do produto, productId do item do pedido; em inglês: Zoppy product API, create product, sync catalog, update product price, product categories, order line item productId. Não use para autenticação, base URL e paginação em geral (veja zoppy-partners-api), clientes (zoppy-partners-clientes), valores, datas e status do pedido (zoppy-partners-pedidos), carrinho abandonado (zoppy-partners-carrinho-abandonado) nem cupons e webhooks (zoppy-partners-cupons-webhooks)."
 ---
 
 # Produtos na Partners API da Zoppy
@@ -9,15 +9,25 @@ description: Cadastra e mantém produtos na Partners API da Zoppy (POST, GET, PU
 
 1. Autenticação, base URL e formato de erro estão na skill **zoppy-partners-api**. Toda chamada leva
    `Authorization: Bearer <token>` e `zoppy-access: <chave>`, lidos de variáveis de ambiente
-   (`ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS`, `ZOPPY_PARTNERS_BASE_URL`). Nunca escreva o token no código.
-2. Valide cada corpo antes de enviar:
+   (`ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS`, `ZOPPY_PARTNERS_BASE_URL`). Credenciais: leia essas variáveis só
+   dentro do código. Nunca imprima, ecoe ou liste o ambiente (`env`, `printenv`, `echo $ZOPPY_...`) nem cole
+   os valores em arquivo, log ou resposta; para conferir se existem, teste só a presença
+   (`process.env[k] ? 'definida' : 'AUSENTE'`), sem mostrar o valor.
+2. Todo corpo de `POST` e `PUT` de produto passa pelo validador antes de ser enviado ou de entrar no código
+   que você devolve, mesmo o mais simples:
    ```bash
    node scripts/validate.mjs --schema=produto.create '<json>'   # POST /products
    node scripts/validate.mjs --schema=produto.update '<json>'   # PUT /products/{id}
    ```
-   Exit `0` válido, `1` inválido, `2` uso errado. `AVISO` não bloqueia, mas descreve um efeito que você
-   provavelmente não quer.
+   Execute o validador, sem precisar ler o código dele (Node 18 ou mais novo, sem dependências).
+   `scripts/validate.mjs` fica na pasta desta skill (a pasta deste SKILL.md), não no projeto em que você
+   trabalha: rode o comando de dentro dela ou troque `scripts/` pelo caminho completo (no Claude Code,
+   `${CLAUDE_SKILL_DIR}/scripts/validate.mjs`). Saída `0` sem `ERRO` (pode ter `AVISO`), `1` com `ERRO`, `2`
+   uso incorreto. `--file=<caminho>` lê o payload de um arquivo, `--json` devolve o resultado para máquina e
+   `--help` mostra o uso. `AVISO` não bloqueia, mas descreve um efeito que você provavelmente não quer.
 3. Guarde o `id` que a Zoppy devolve. É ele, e não o seu `externalId`, que vai no `productId` do pedido.
+4. Dado criado em teste ou só para ver a resposta leva o prefixo definido pelo usuário e é apagado no fim
+   (regra em `zoppy-partners-api`).
 
 ## Endpoints
 
@@ -136,6 +146,10 @@ Depois de cada escrita, leia de volta com `GET /products/{id}` e compare `name`,
 `categories`, `externalId`. Datas na leitura vêm em UTC com segundos inteiros (`.000Z`).
 
 ## Exemplos prontos (rodam contra a sua conta)
+
+Use os exemplos como modelo de código: leia o arquivo e adapte ao projeto. Só execute um exemplo se
+o usuário pedir, com as três variáveis de ambiente de uma conta de teste e a partir da pasta desta
+skill (os caminhos abaixo são relativos a ela).
 
 - [assets/examples/01-criar-buscar-atualizar-excluir.mjs](assets/examples/01-criar-buscar-atualizar-excluir.mjs)
   cria, lê pelas três buscas, reenvia o POST, atualiza com PUT e exclui. A versão `.curl.sh` faz o

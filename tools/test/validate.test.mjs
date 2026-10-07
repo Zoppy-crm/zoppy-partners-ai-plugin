@@ -75,3 +75,16 @@ test('CLI: --list-schemas e --json', () => {
     const parsed = JSON.parse(run(['--json', '--schema=exemplo.create', '{"externalId":"p"}']).out);
     assert.equal(parsed.valid, false);
 });
+
+test('CLI: --help sai 0 com o uso', () => {
+    const result = run(['--help']);
+    assert.equal(result.code, 0);
+    assert.match(result.out, /--schema=<nome>/);
+});
+
+test('CLI: --file inexistente é uso incorreto com mensagem, sem stack', () => {
+    const result = run(['--schema=exemplo.create', '--file=nao-existe.json']);
+    assert.equal(result.code, 2);
+    assert.match(result.out, /não foi possível ler --file=nao-existe\.json \(ENOENT\)/);
+    assert.doesNotMatch(result.out, /at readFileSync/);
+});

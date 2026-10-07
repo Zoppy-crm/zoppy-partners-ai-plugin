@@ -1,22 +1,23 @@
 ---
 name: zoppy-partners-pedidos
-description: Envia pedidos para a Partners API da Zoppy (/orders) com o total e as datas que a Zoppy espera. Use ao gerar código que cria, reenvia (PUT), busca, lista ou exclui pedidos; ao montar subtotal, discount e shipping (não existe campo total); ao escolher o status (completed, on-hold, canceled, processing); ao decidir createdAt e completedAt; ao ligar itens, cupom usado, vendedor e loja ao pedido; e ao investigar total negativo, frete descontado duas vezes, pedido fora do período da venda ou itens que sumiram. Triggers EN, send orders to Zoppy, create or update order in Zoppy Partners API, order total, subtotal with shipping, order status, order createdAt, negative order total, order line items. Não use para autenticação, base URL e paginação genérica (veja a skill zoppy-partners-api), cadastro de cliente (zoppy-partners-clientes), cadastro de produto (zoppy-partners-produtos), carrinho abandonado (zoppy-partners-carrinho-abandonado) ou cupom criado pela Zoppy e webhooks (zoppy-partners-cupons-webhooks).
+description: "Envia pedidos para a Partners API da Zoppy (/orders) com o total e as datas que a Zoppy espera. Use ao gerar código que cria, reenvia (PUT), busca, lista ou exclui pedidos; ao montar subtotal, discount e shipping (não existe campo total); ao escolher o status (completed, on-hold, canceled, processing); ao decidir createdAt e completedAt; ao ligar itens, cupom usado, vendedor e loja ao pedido; e ao investigar total negativo, frete descontado duas vezes, pedido fora do período da venda ou itens que sumiram. Gatilhos em inglês: send orders to Zoppy, create or update order in Zoppy Partners API, order total, subtotal with shipping, order status, order createdAt, negative order total, order line items. Não use para autenticação, base URL e paginação genérica (veja a skill zoppy-partners-api), cadastro de cliente (zoppy-partners-clientes), cadastro de produto (zoppy-partners-produtos), carrinho abandonado (zoppy-partners-carrinho-abandonado) ou cupom criado pela Zoppy e webhooks (zoppy-partners-cupons-webhooks)."
 ---
 
 # Pedidos na Partners API da Zoppy
 
 ## Antes de gerar código
 
-1. Leia a skill `zoppy-partners-api` para autenticação (`Authorization: Bearer` + `zoppy-access`), base URL e paginação. Nunca coloque token no código: leia de `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e `ZOPPY_PARTNERS_BASE_URL`.
+1. Leia a skill `zoppy-partners-api` para autenticação (`Authorization: Bearer` + `zoppy-access`), base URL e paginação. Credenciais: leia `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e `ZOPPY_PARTNERS_BASE_URL` só dentro do código. Nunca imprima, ecoe ou liste o ambiente (`env`, `printenv`, `echo $ZOPPY_...`) nem cole os valores em arquivo, log ou resposta; para conferir se existem, teste só a presença (`process.env[k] ? 'definida' : 'AUSENTE'`), sem mostrar o valor.
 2. O cliente precisa existir antes (veja a skill `zoppy-partners-clientes`) e os produtos também, se o pedido tiver itens (skill `zoppy-partners-produtos`). O pedido usa os **ids da Zoppy** devolvidos por esses cadastros, não os seus `externalId`.
-3. Valide cada payload antes de enviar:
+3. Dado criado em teste ou só para ver a resposta leva o prefixo definido pelo usuário e é apagado no fim (regra em `zoppy-partners-api`), inclusive os cupons que as automações da conta geram a partir do pedido (seção "Automações da conta").
+4. Todo corpo de `POST` e `PUT` de pedido passa pelo validador antes de ser enviado ou de entrar no código que você devolve:
 
 ```bash
 node scripts/validate.mjs --schema=pedido.create '<json>'   # POST /orders
 node scripts/validate.mjs --schema=pedido.update '<json>'   # PUT /orders/{id}
 ```
 
-Exit `0` válido, `1` inválido, `2` erro de uso. `ERRO` é payload que a API recusa ou grava com valor errado. `AVISO` é algo que a API aceita com 200 mas grava diferente do que você provavelmente espera: leia cada um.
+Execute o validador, sem precisar ler o código dele (Node 18 ou mais novo, sem dependências). `scripts/validate.mjs` fica na pasta desta skill (a pasta deste SKILL.md), não no projeto em que você trabalha: rode o comando de dentro dela ou troque `scripts/` pelo caminho completo (no Claude Code, `${CLAUDE_SKILL_DIR}/scripts/validate.mjs`). Saída `0` sem `ERRO` (pode ter `AVISO`), `1` com `ERRO`, `2` uso incorreto. `--file=<caminho>` lê o payload de um arquivo, `--json` devolve o resultado para máquina e `--help` mostra o uso. `ERRO` é payload que a API recusa ou grava com valor errado. `AVISO` é algo que a API aceita com 200 mas grava diferente do que você provavelmente espera: leia cada um.
 
 ## Endpoints
 
@@ -118,7 +119,12 @@ Para sincronizar sem duplicar: `GET /orders/external/{externalId}`; 404 → `POS
 - **`provider`**: texto livre, gravado e devolvido como veio.
 - **`createCoupon`** e **`orderFromZoppy`**: aceitos (booleanos), mas não alteram o pedido gravado nem criam cupom.
 
-Todo `POST` e `PUT` aceito entra no processamento de pedidos da Zoppy segundos depois: registra o uso do cupom e roda as automações de pedido configuradas na conta (por exemplo, gerar um cupom de giftback para o telefone do cliente, que aparece em `couponCreated` no `GET`). O que dispara depende da configuração da conta.
+### Automações da conta
+
+Todo `POST` e `PUT` aceito entra no processamento de pedidos da Zoppy segundos depois: registra o uso do cupom e roda as automações de pedido configuradas na conta. Pedido `completed`, e também pedido em outro status se a conta tiver fluxo para ele (um fluxo de pedido `on-hold`, por exemplo), pode disparar um fluxo que cria cupom ou giftback para o telefone do cliente. O cupom aparece segundos depois em `couponCreated` no `GET /orders/{id}` e em `GET /coupons/order/{id}`. O que dispara depende da configuração da conta.
+
+- Ao testar, depois de cada pedido espere alguns segundos, liste esses cupons (`GET /coupons/order/{id}` ou `GET /coupons/phone/{telefone}/many`) e apague-os na limpeza (skill `zoppy-partners-cupons-webhooks`).
+- Antes de enviar pedidos reais ou carga histórica, confira com o time da Zoppy quais fluxos estão ligados na conta: o cliente pode receber cupom gerado por esses fluxos.
 
 ## Idempotência
 
@@ -138,6 +144,11 @@ O mesmo `externalId` duas vezes no `POST` responde `422 External id already exis
 Lista completa em `references/erros.md`.
 
 ## Mais detalhes
+
+Use os exemplos como modelo de código: leia o arquivo e adapte ao projeto. Só execute um exemplo se
+o usuário pedir, com as três variáveis de ambiente de uma conta de teste e a partir da pasta desta
+skill (os caminhos abaixo são relativos a ela). Os que gravam dados usam o prefixo `skills-test-` e
+apagam o que criaram.
 
 - `references/campos.md`: todos os campos do request e da resposta.
 - `references/erros.md`: erros com corpo real e casos de borda.

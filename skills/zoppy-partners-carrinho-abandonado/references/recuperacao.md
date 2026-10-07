@@ -35,7 +35,8 @@ Consequências para a integração:
 
 - **Mande o `createdAt` real do abandono.** Sem ele a data do carrinho é o momento do envio.
   Se o cliente comprou entre o abandono e o envio do carrinho, o pedido fica com data anterior à
-  do carrinho e não barra a recuperação.
+  do carrinho e não barra a recuperação. Se o seu sistema não guarda o momento do abandono, use
+  a última atualização do carrinho no seu sistema, não a hora do envio nem um horário inventado.
 - **Cadastre o pedido também** (skill `zoppy-partners-pedidos`) com o mesmo cliente. É o pedido,
   e não uma mudança no carrinho, que barra a recuperação.
 
@@ -49,7 +50,7 @@ Consequências para a integração:
 
 ## Exigências para o carrinho ser aceito
 
-- Cliente existente na conta, informado pelo id Zoppy em `customerId` (veja a skill
+- Cliente existente na conta, informado pelo id da Zoppy em `customerId` (veja a skill
   `zoppy-partners-clientes` para o cadastro do cliente).
 - `url` não vazia. URL só com espaços é aceita e gravada vazia: o carrinho fica sem link de
   recuperação.

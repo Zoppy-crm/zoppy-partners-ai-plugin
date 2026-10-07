@@ -107,13 +107,22 @@ function parseArgs(argv) {
         else if (key === '--schemas-dir') args.schemasDir = value;
         else if (key === '--json') args.json = true;
         else if (key === '--list-schemas') args.list = true;
+        else if (key === '--help' || key === '-h') args.help = true;
         else args.positional.push(arg);
     }
     return args;
 }
 
+function readPayloadFile(path) {
+    try {
+        return readFileSync(path, 'utf8');
+    } catch (cause) {
+        throw new UsageError(`não foi possível ler --file=${path} (${cause.code ?? cause.message}); o caminho é relativo à pasta onde você roda o comando`);
+    }
+}
+
 function readPayload(args) {
-    const raw = args.file ? readFileSync(args.file, 'utf8') : args.positional[0];
+    const raw = args.file ? readPayloadFile(args.file) : args.positional[0];
     if (!raw) throw new UsageError('informe o payload como argumento ou --file=<caminho>');
     try {
         return JSON.parse(raw);
@@ -128,11 +137,25 @@ function print(result, asJson) {
     for (const issue of result.issues) console.log(`${issue.level === 'error' ? 'ERRO' : 'AVISO'} ${issue.field || '(raiz)'}: ${issue.message}`);
 }
 
+const USAGE = `uso: node scripts/validate.mjs --schema=<nome> '<json>'
+     node scripts/validate.mjs --schema=<nome> --file=<caminho.json>
+     node scripts/validate.mjs --list-schemas
+
+Confere um payload da Partners API contra o schema desta skill antes do envio.
+  --schema=<nome>   payload a conferir (veja --list-schemas)
+  --file=<caminho>  lê o payload de um arquivo em vez do argumento
+  --json            devolve o resultado em JSON
+  --list-schemas    lista os schemas desta skill
+  --help            mostra esta ajuda
+
+Saída: 0 sem ERRO (pode ter AVISO), 1 com ERRO, 2 uso incorreto.`;
+
 async function main(argv) {
     const args = parseArgs(argv);
     const schemasDir = args.schemasDir ?? DEFAULT_SCHEMAS_DIR;
+    if (args.help) return console.log(USAGE);
     if (args.list) return console.log(listSchemas(schemasDir).join('\n'));
-    if (!args.schema) throw new UsageError('uso: validate.mjs --schema=<nome> \'<json>\' | --file=<caminho> | --list-schemas [--json]');
+    if (!args.schema) throw new UsageError('informe --schema=<nome>; rode com --help para ver o uso');
     const result = await validate(args.schema, readPayload(args), schemasDir);
     print(result, args.json);
     process.exitCode = result.valid ? 0 : 1;

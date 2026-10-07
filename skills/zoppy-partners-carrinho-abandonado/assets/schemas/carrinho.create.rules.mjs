@@ -15,7 +15,7 @@ function ignoredUpdatedAt(payload) {
 
 function missingCreatedAt(payload) {
     if (payload.createdAt !== undefined) return [];
-    return [{ level: 'warning', field: 'createdAt', message: 'ausente: a data do carrinho vira o momento do recebimento. Mande a data real do abandono' }];
+    return [{ level: 'warning', field: 'createdAt', message: 'ausente: a data do carrinho vira o momento do recebimento, e um pedido feito entre o abandono e o envio não barra a recuperação. Mande o momento do abandono; se o seu sistema não guarda esse momento, mande a última atualização do carrinho no seu sistema. Não invente horário' }];
 }
 
 export default function rules(payload) {

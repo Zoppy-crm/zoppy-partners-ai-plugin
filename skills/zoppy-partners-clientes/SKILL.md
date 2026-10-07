@@ -1,23 +1,24 @@
 ---
 name: zoppy-partners-clientes
-description: Cria, atualiza, busca e exclui clientes na Partners API da Zoppy (/customers) sem duplicar cadastro nem perder dado. Use ao gerar código que envia clientes para a Zoppy, sincroniza a base de clientes de uma loja, ERP ou PDV, monta o payload de cliente (telefone, endereço, data de nascimento, gênero, e-mail), faz upsert por externalId ou busca cliente por telefone, e ao investigar cliente duplicado, telefone recusado (Phone invalid) ou dado que não foi gravado. Triggers EN, create or update customer in Zoppy, sync customers to Zoppy Partners API, customer payload, phone normalization, find customer by externalId or phone, duplicate customer. Não use para autenticação, base URL, paginação genérica e formato de erro (veja a skill zoppy-partners-api), para pedidos e o vínculo cliente no pedido (zoppy-partners-pedidos), produtos (zoppy-partners-produtos), carrinho abandonado (zoppy-partners-carrinho-abandonado) ou cupons e webhooks (zoppy-partners-cupons-webhooks).
+description: "Cria, atualiza, busca e exclui clientes na Partners API da Zoppy (/customers) sem duplicar cadastro nem perder dado. Use ao gerar código que envia clientes para a Zoppy, sincroniza a base de clientes de uma loja, ERP ou PDV, monta o payload de cliente (telefone, endereço, data de nascimento, gênero, e-mail), faz upsert por externalId ou busca cliente por telefone, e ao investigar cliente duplicado, telefone recusado (Phone invalid) ou dado que não foi gravado. Gatilhos em inglês: create or update customer in Zoppy, sync customers to Zoppy Partners API, customer payload, phone normalization, find customer by externalId or phone, duplicate customer. Não use para autenticação, base URL, paginação genérica e formato de erro (veja a skill zoppy-partners-api), para pedidos e o vínculo cliente no pedido (zoppy-partners-pedidos), produtos (zoppy-partners-produtos), carrinho abandonado (zoppy-partners-carrinho-abandonado) ou cupons e webhooks (zoppy-partners-cupons-webhooks)."
 ---
 
 # Clientes na Partners API da Zoppy
 
 ## Antes de gerar código
 
-1. Leia a skill `zoppy-partners-api` para autenticação (`Authorization: Bearer` + `zoppy-access`) e base URL. Nunca coloque token no código: leia de `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e `ZOPPY_PARTNERS_BASE_URL`.
-2. Valide cada payload antes de enviar:
+1. Leia a skill `zoppy-partners-api` para autenticação (`Authorization: Bearer` + `zoppy-access`) e base URL. Credenciais: leia `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e `ZOPPY_PARTNERS_BASE_URL` só dentro do código. Nunca imprima, ecoe ou liste o ambiente (`env`, `printenv`, `echo $ZOPPY_...`) nem cole os valores em arquivo, log ou resposta; para conferir se existem, teste só a presença (`process.env[k] ? 'definida' : 'AUSENTE'`), sem mostrar o valor.
+2. Todo corpo de `POST` e `PUT` de cliente passa pelo validador antes de ser enviado ou de entrar no código que você devolve, mesmo o mais simples:
 
 ```bash
 node scripts/validate.mjs --schema=cliente.create '<json>'   # POST /customers
 node scripts/validate.mjs --schema=cliente.update '<json>'   # PUT /customers/{id}
 ```
 
-Exit `0` válido, `1` inválido, `2` erro de uso. `AVISO` aponta algo que a API aceita com 200 mas grava diferente do que você espera.
+Execute o validador, sem precisar ler o código dele (Node 18 ou mais novo, sem dependências). `scripts/validate.mjs` fica na pasta desta skill (a pasta deste SKILL.md), não no projeto em que você trabalha: rode o comando de dentro dela ou troque `scripts/` pelo caminho completo (no Claude Code, `${CLAUDE_SKILL_DIR}/scripts/validate.mjs`). Saída `0` sem `ERRO` (pode ter `AVISO`), `1` com `ERRO`, `2` uso incorreto. `--file=<caminho>` lê o payload de um arquivo, `--json` devolve o resultado para máquina e `--help` mostra o uso. `AVISO` aponta algo que a API aceita com 200 mas grava diferente do que você espera.
 
 3. Para sincronizar uma base, use o fluxo de upsert desta skill (seção "Sem duplicar"). Um `POST` cego por cliente não atualiza ninguém.
+4. Dado criado em teste ou só para ver a resposta leva o prefixo definido pelo usuário e é apagado no fim (regra em `zoppy-partners-api`).
 
 ## Endpoints
 
@@ -129,6 +130,11 @@ Detalhes de pedido: skill `zoppy-partners-pedidos`.
 No 400 `message` é uma lista; nos demais é texto.
 
 ## Exemplos e referências
+
+Use os exemplos como modelo de código: leia o arquivo e adapte ao projeto. Só execute um exemplo se
+o usuário pedir, com as três variáveis de ambiente de uma conta de teste e a partir da pasta desta
+skill (os caminhos abaixo são relativos a ela). Os que gravam dados usam o prefixo `skills-test-` e
+apagam o que criaram.
 
 - `assets/examples/01-ciclo-cliente.mjs`: criar, buscar por externalId, atualizar, conferir e excluir.
 - `assets/examples/02-ciclo-cliente.curl.sh`: o mesmo ciclo em curl.
