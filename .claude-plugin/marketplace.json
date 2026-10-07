@@ -1,6 +1,12 @@
 {
   "name": "zoppy",
-  "owner": { "name": "Zoppy" },
+  "owner": {
+    "name": "Zoppy"
+  },
+  "metadata": {
+    "description": "Plugins oficiais da Zoppy para agentes de IA",
+    "version": "0.1.0"
+  },
   "plugins": [
     {
       "name": "zoppy-partners",
