@@ -1,6 +1,6 @@
 ---
 name: zoppy-partners-carrinho-abandonado
-description: Envia, atualiza, busca, lista e exclui carrinhos abandonados na Partners API da Zoppy (/abandoned-carts) com os valores e datas que a Zoppy espera, e explica o que faz a recuperação do carrinho começar ou ser barrada por um pedido. Use ao gerar código que manda carrinho abandonado para a Zoppy, ao montar subtotal, discount, shipping, url e lineItems do carrinho, ao depurar total 0, total negativo, item sumido, erro 422 ou 500 em /abandoned-carts, ou ao entender por que um carrinho não entrou na recuperação. Gatilhos, "carrinho abandonado", "enviar carrinho para a Zoppy", "recuperação de carrinho", "checkout abandonado", "abandoned cart", "send abandoned cart to Zoppy", "cart recovery", "POST /abandoned-carts", "abandoned cart total is 0". Não use para autenticação, base URL e paginação em geral (use zoppy-partners-api), cadastro de cliente (zoppy-partners-clientes), cadastro de produto (zoppy-partners-produtos), pedidos (zoppy-partners-pedidos) nem cupons e webhooks (zoppy-partners-cupons-webhooks).
+description: "Envia, atualiza, busca, lista e exclui carrinhos abandonados na Partners API da Zoppy (/abandoned-carts) com os valores e datas que a Zoppy espera, e explica o que faz a recuperação do carrinho começar ou ser barrada por um pedido. Use ao gerar código que manda carrinho abandonado para a Zoppy, ao montar subtotal, discount, shipping, url e lineItems do carrinho, ao depurar total 0, total negativo, item sumido, erro 422 ou 500 em /abandoned-carts, ou ao entender por que um carrinho não entrou na recuperação. Gatilhos: carrinho abandonado, enviar carrinho para a Zoppy, recuperação de carrinho, checkout abandonado, abandoned cart, send abandoned cart to Zoppy, cart recovery, POST /abandoned-carts, abandoned cart total is 0. Não use para autenticação, base URL e paginação em geral (use zoppy-partners-api), cadastro de cliente (zoppy-partners-clientes), cadastro de produto (zoppy-partners-produtos), pedidos (zoppy-partners-pedidos) nem cupons e webhooks (zoppy-partners-cupons-webhooks)."
 ---
 
 # Carrinho abandonado na Partners API da Zoppy
@@ -14,7 +14,7 @@ recuperação (`url`) que a Zoppy usa nos fluxos de carrinho abandonado da conta
    base URL e formato de erro. Leia as variáveis `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e
    `ZOPPY_PARTNERS_BASE_URL` do ambiente; nunca escreva token no código.
 2. Crie antes o cliente (skill `zoppy-partners-clientes`) e os produtos (skill
-   `zoppy-partners-produtos`). O carrinho usa os **ids Zoppy** devolvidos por eles, não o seu
+   `zoppy-partners-produtos`). O carrinho usa os **ids da Zoppy** devolvidos por eles, não o seu
    `externalId`.
 3. Valide cada corpo antes de enviar:
 
@@ -23,7 +23,7 @@ node scripts/validate.mjs --schema=carrinho.create '<json>'   # POST
 node scripts/validate.mjs --schema=carrinho.update '<json>'   # PUT
 ```
 
-Exit `0` válido (pode ter AVISO), `1` com ERRO, `2` uso incorreto. `--json` para máquina.
+Execute o validador, sem precisar ler o código dele (Node 18 ou mais novo, sem dependências). `scripts/validate.mjs` fica na pasta desta skill (a pasta deste SKILL.md), não no projeto em que você trabalha: rode o comando de dentro dela ou troque `scripts/` pelo caminho completo (no Claude Code, `${CLAUDE_SKILL_DIR}/scripts/validate.mjs`). Saída `0` sem `ERRO` (pode ter `AVISO`), `1` com `ERRO`, `2` uso incorreto. `--file=<caminho>` lê o payload de um arquivo, `--json` devolve o resultado para máquina e `--help` mostra o uso.
 
 ## Endpoints
 
@@ -42,13 +42,13 @@ O `POST` responde 200, não 201.
 
 | Campo | Tipo | Obrigatório | O que acontece |
 |---|---|---|---|
-| `customerId` | string | sim | Id Zoppy do cliente. Ausente: 400. Inexistente na conta (ou o `externalId` do cliente): 422 `Customer not found` |
+| `customerId` | string | sim | Id da Zoppy do cliente. Ausente: 400. Inexistente na conta (ou o `externalId` do cliente): 422 `Customer not found` |
 | `subtotal` | number | sim | Valor bruto do carrinho, **frete incluído**. String como `"199.90"`: 400 |
 | `discount` | number | na prática sim | Mande `0` se não houver. Ausente: aceito, mas o total gravado vira `0` |
 | `shipping` | number | na prática sim | Mande `0` se não houver. Ausente: aceito, mas o total gravado vira `0` |
 | `url` | string | sim | Link de recuperação. Ausente ou `""`: 422 `Abandoned Cart URL is required.`. Espaços nas pontas são removidos |
 | `externalId` | string | não | Seu id do carrinho. Repetido: 422 `External id already exists` |
-| `lineItems` | lista | não | `[{ "productId": "<id Zoppy>", "quantity": 2 }]`. Precisa ser lista |
+| `lineItems` | lista | não | `[{ "productId": "<id da Zoppy>", "quantity": 2 }]`. Precisa ser lista |
 | `createdAt` | data ISO 8601 com fuso | não | Data do abandono. Ausente: vira o momento do recebimento |
 | `updatedAt` | data | não | Ignorado: a API grava o momento do recebimento |
 
@@ -87,7 +87,7 @@ Para conferir um envio, compare `total` e `discount`, não `subtotal` e `shippin
 
 ## Regras que mais causam erro
 
-1. **`lineItems.productId` é o id Zoppy do produto.** Item com `productId` inexistente ou com o
+1. **`lineItems.productId` é o id da Zoppy do produto.** Item com `productId` inexistente ou com o
    `externalId` do produto é descartado sem erro: o carrinho volta com menos itens. Confira
    `lineItems.length` na resposta.
 2. **`quantity` não é validada.** O `GET` mostra o que foi gravado: negativa fica negativa
@@ -159,9 +159,12 @@ Lista completa e casos de borda em [references/erros.md](references/erros.md).
 
 ## Exemplos prontos
 
+Use os exemplos como modelo de código: leia o arquivo e adapte ao projeto. Só execute um exemplo se
+o usuário pedir, com as três variáveis de ambiente de uma conta de teste e a partir da pasta desta
+skill (os caminhos abaixo são relativos a ela). Os que gravam dados usam o prefixo `skills-test-` e
+apagam o que criaram.
+
 - `assets/examples/01-criar-buscar-atualizar-excluir.mjs` e `.curl.sh`: cria cliente e produto,
   cria o carrinho, lê por id e por `externalId`, testa o `externalId` repetido, atualiza, confere,
   exclui e limpa tudo.
 - `assets/examples/02-listar.mjs`: lista com `after`, `page` e `pageSize` e acha o carrinho criado.
-
-Rode com as três variáveis de ambiente definidas: `node assets/examples/02-listar.mjs`.

@@ -49,7 +49,7 @@ Consequências para a integração:
 
 ## Exigências para o carrinho ser aceito
 
-- Cliente existente na conta, informado pelo id Zoppy em `customerId` (veja a skill
+- Cliente existente na conta, informado pelo id da Zoppy em `customerId` (veja a skill
   `zoppy-partners-clientes` para o cadastro do cliente).
 - `url` não vazia. URL só com espaços é aceita e gravada vazia: o carrinho fica sem link de
   recuperação.

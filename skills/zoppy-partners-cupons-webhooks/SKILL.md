@@ -1,6 +1,6 @@
 ---
 name: zoppy-partners-cupons-webhooks
-description: "Cupons e webhooks da Partners API da Zoppy: cadastrar na Zoppy um cupom que você criou (POST /coupons individual ligado a telefone, POST /coupons/shared compartilhado com limite de uso), buscar, atualizar e excluir cupom, ler o cupom que um fluxo de automação da Zoppy gerou para um pedido (giftback) e cadastrar a URL que recebe o webhook coupon_create. Use ao gerar código de cupom, ao depurar 422 de cupom (código já usado, Id externo, celular inválido), cupom compartilhado achado pelo externalId errado, cupom baixado sozinho por um pedido, webhook que não chega ou bearerToken. Gatilhos: cupom Zoppy, giftback, coupon_create, webhook Zoppy, cupom compartilhado, couponCode, coupons-config; Zoppy coupon, shared coupon, coupon webhook, giftback webhook. Não use para autenticação, paginação e formato de erro (zoppy-partners-api) nem para montar o pedido que usa o cupom (zoppy-partners-pedidos)."
+description: "Registra na Partners API da Zoppy o cupom criado no sistema do parceiro (POST /coupons individual ligado a telefone, POST /coupons/shared compartilhado com limite de uso), busca, atualiza e exclui cupom, lê o cupom que um fluxo de automação da Zoppy gerou para um pedido (giftback) e cadastra a URL que recebe o webhook coupon_create. Use ao gerar código de cupom, ao depurar 422 de cupom (código já usado, Id externo, celular inválido), cupom compartilhado achado pelo externalId errado, cupom baixado sozinho por um pedido, webhook que não chega ou bearerToken. Gatilhos: cupom Zoppy, giftback, coupon_create, webhook Zoppy, cupom compartilhado, couponCode, coupons-config; em inglês: Zoppy coupon, shared coupon, coupon webhook, giftback webhook. Não use para autenticação, paginação e formato de erro (zoppy-partners-api) nem para montar o pedido que usa o cupom (zoppy-partners-pedidos)."
 ---
 
 # Cupons e webhooks na Partners API da Zoppy
@@ -14,8 +14,13 @@ description: "Cupons e webhooks da Partners API da Zoppy: cadastrar na Zoppy um 
    node scripts/validate.mjs --schema=cupom-compartilhado.create '<json>'
    node scripts/validate.mjs --schema=webhook.create '<json>'
    ```
-   Exit 0 válido, 1 inválido. Leia também os avisos: quase todo campo de cupom tem um padrão
-   que só aparece quando você não manda o campo.
+   Execute o validador, sem precisar ler o código dele (Node 18 ou mais novo, sem dependências).
+   `scripts/validate.mjs` fica na pasta desta skill (a pasta deste SKILL.md), não no projeto em que você
+   trabalha: rode o comando de dentro dela ou troque `scripts/` pelo caminho completo (no Claude Code,
+   `${CLAUDE_SKILL_DIR}/scripts/validate.mjs`). Saída `0` sem `ERRO` (pode ter `AVISO`), `1` com `ERRO`, `2`
+   uso incorreto. `--file=<caminho>` lê o payload de um arquivo, `--json` devolve o resultado para máquina e
+   `--help` mostra o uso. Leia também os avisos: quase todo campo de cupom tem um padrão que só aparece quando
+   você não manda o campo.
 3. Mande sempre `externalId`, `type`, `minPurchaseValue`, `expiryDate` e, no individual,
    `awaitingOrder`. Os padrões da Zoppy para esses campos raramente são o que você quer.
 
@@ -239,6 +244,11 @@ automação. Em uma conta com `enableGiftback: false` e `acumulative: true`, o f
 com `acumulative: false`.
 
 ## Referências e exemplos
+
+Use os exemplos como modelo de código: leia o arquivo e adapte ao projeto. Só execute um exemplo se
+o usuário pedir, com as três variáveis de ambiente de uma conta de teste e a partir da pasta desta
+skill (os caminhos abaixo são relativos a ela). Os que gravam dados usam o prefixo `skills-test-` e
+apagam o que criaram.
 
 - [references/cupons.md](references/cupons.md): campos de resposta, erros e casos de borda dos cupons.
 - [references/webhook.md](references/webhook.md): cadastro, corpo, reenvio e roteiro de recebimento.

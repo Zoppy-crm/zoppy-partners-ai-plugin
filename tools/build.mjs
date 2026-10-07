@@ -46,6 +46,10 @@ function filesUnder(dir) {
     });
 }
 
+function isPlainScalarWithColon(raw) {
+    return !/^['"|>]/.test(raw) && raw.includes(': ');
+}
+
 function lintFrontmatter(dir, keys) {
     if (!keys) return ['SKILL.md sem frontmatter'];
     const problems = Object.keys(keys).filter((key) => !ALLOWED_KEYS.has(key)).map((key) => `campo "${key}" não é do padrão aberto (use só name, description, compatibility, metadata)`);
@@ -55,6 +59,7 @@ function lintFrontmatter(dir, keys) {
     if (!NAME.test(name) || name.length > 64) problems.push(`name "${name}" fora do padrão (minúsculas, números e hífen, até 64)`);
     if (/claude|anthropic/.test(name)) problems.push('name não pode conter claude/anthropic');
     if (description.length < 1 || description.length > 1024) problems.push(`description com ${description.length} caracteres (1 a 1024)`);
+    for (const [key, raw] of Object.entries(keys)) if (isPlainScalarWithColon(raw)) problems.push(`${key} sem aspas contém ": ", o que torna o YAML inválido; ponha o valor entre aspas`);
     return problems;
 }
 

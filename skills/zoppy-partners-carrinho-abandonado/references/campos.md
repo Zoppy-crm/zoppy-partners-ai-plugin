@@ -50,7 +50,7 @@ O `updatedAt` que volta na resposta do PUT pode ser o anterior. Para ver o valor
 { "productId": "0d90ef24-2eff-42fa-8732-8cba125b9b8e", "quantity": 2 }
 ```
 
-- `productId`: id Zoppy do produto (o `id` devolvido ao criar o produto). Com o `externalId` do
+- `productId`: id da Zoppy do produto (o `id` devolvido ao criar o produto). Com o `externalId` do
   produto, um id inexistente ou `null`, o item é descartado sem erro. Item sem `productId`, ou o
   próprio item `null`: 500, com o carrinho já gravado só com os itens anteriores a ele.
 - `quantity`: não validada. O GET mostra o gravado: negativa fica negativa, `"2"` vira `2`,
@@ -63,7 +63,7 @@ Mesmo formato no POST, PUT, GET por id, GET por `externalId` e em cada item da l
 
 | Campo | Conteúdo |
 |---|---|
-| `id` | id Zoppy do carrinho (UUID) |
+| `id` | id da Zoppy do carrinho (UUID) |
 | `externalId` | seu id, ou `null` |
 | `url` | link gravado |
 | `total` | total gravado (`subtotal - discount - shipping` do envio) |
