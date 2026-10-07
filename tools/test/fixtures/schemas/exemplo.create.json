@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "required": ["externalId", "subtotal"],
+  "additionalProperties": false,
+  "properties": {
+    "externalId": { "type": "string", "minLength": 1 },
+    "subtotal": { "type": "number", "minimum": 0 },
+    "status": { "type": "string", "enum": ["completed", "on-hold"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "email": { "type": ["string", "null"], "format": "email" },
+    "lineItems": { "type": "array", "items": { "type": "object", "required": ["productId"], "properties": { "productId": { "type": "string" } } } }
+  }
+}

@@ -5,7 +5,7 @@
   "type": "module",
   "engines": { "node": ">=18" },
   "scripts": {
-    "test": "node --test tools/test/",
+    "test": "node --test tools/test/*.test.mjs",
     "build": "node tools/build.mjs",
     "check": "node tools/build.mjs --check",
     "smoke": "node tools/smoke.mjs"
