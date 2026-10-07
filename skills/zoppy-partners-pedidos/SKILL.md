@@ -1,6 +1,6 @@
 ---
 name: zoppy-partners-pedidos
-description: Envia pedidos para a Partners API da Zoppy (/orders) com o total e as datas que a Zoppy espera. Use ao gerar código que cria, reenvia (PUT), busca, lista ou exclui pedidos; ao montar subtotal, discount e shipping (não existe campo total); ao escolher o status (completed, on-hold, canceled, processing); ao decidir createdAt e completedAt; ao ligar itens, cupom usado, vendedor e loja ao pedido; e ao investigar total negativo, frete descontado duas vezes, pedido fora do período da venda ou itens que sumiram. Triggers EN, send orders to Zoppy, create or update order in Zoppy Partners API, order total, subtotal with shipping, order status, order createdAt, negative order total, order line items. Não use para autenticação, base URL e paginação genérica (veja a skill zoppy-partners-api), cadastro de cliente (zoppy-partners-clientes), cadastro de produto (zoppy-partners-produtos), carrinho abandonado (zoppy-partners-carrinho-abandonado) ou cupom criado pela Zoppy e webhooks (zoppy-partners-cupons-webhooks).
+description: "Envia pedidos para a Partners API da Zoppy (/orders) com o total e as datas que a Zoppy espera. Use ao gerar código que cria, reenvia (PUT), busca, lista ou exclui pedidos; ao montar subtotal, discount e shipping (não existe campo total); ao escolher o status (completed, on-hold, canceled, processing); ao decidir createdAt e completedAt; ao ligar itens, cupom usado, vendedor e loja ao pedido; e ao investigar total negativo, frete descontado duas vezes, pedido fora do período da venda ou itens que sumiram. Gatilhos em inglês: send orders to Zoppy, create or update order in Zoppy Partners API, order total, subtotal with shipping, order status, order createdAt, negative order total, order line items. Não use para autenticação, base URL e paginação genérica (veja a skill zoppy-partners-api), cadastro de cliente (zoppy-partners-clientes), cadastro de produto (zoppy-partners-produtos), carrinho abandonado (zoppy-partners-carrinho-abandonado) ou cupom criado pela Zoppy e webhooks (zoppy-partners-cupons-webhooks)."
 ---
 
 # Pedidos na Partners API da Zoppy
@@ -16,7 +16,7 @@ node scripts/validate.mjs --schema=pedido.create '<json>'   # POST /orders
 node scripts/validate.mjs --schema=pedido.update '<json>'   # PUT /orders/{id}
 ```
 
-Exit `0` válido, `1` inválido, `2` erro de uso. `ERRO` é payload que a API recusa ou grava com valor errado. `AVISO` é algo que a API aceita com 200 mas grava diferente do que você provavelmente espera: leia cada um.
+Execute o validador, sem precisar ler o código dele (Node 18 ou mais novo, sem dependências). `scripts/validate.mjs` fica na pasta desta skill (a pasta deste SKILL.md), não no projeto em que você trabalha: rode o comando de dentro dela ou troque `scripts/` pelo caminho completo (no Claude Code, `${CLAUDE_SKILL_DIR}/scripts/validate.mjs`). Saída `0` sem `ERRO` (pode ter `AVISO`), `1` com `ERRO`, `2` uso incorreto. `--file=<caminho>` lê o payload de um arquivo, `--json` devolve o resultado para máquina e `--help` mostra o uso. `ERRO` é payload que a API recusa ou grava com valor errado. `AVISO` é algo que a API aceita com 200 mas grava diferente do que você provavelmente espera: leia cada um.
 
 ## Endpoints
 
@@ -138,6 +138,11 @@ O mesmo `externalId` duas vezes no `POST` responde `422 External id already exis
 Lista completa em `references/erros.md`.
 
 ## Mais detalhes
+
+Use os exemplos como modelo de código: leia o arquivo e adapte ao projeto. Só execute um exemplo se
+o usuário pedir, com as três variáveis de ambiente de uma conta de teste e a partir da pasta desta
+skill (os caminhos abaixo são relativos a ela). Os que gravam dados usam o prefixo `skills-test-` e
+apagam o que criaram.
 
 - `references/campos.md`: todos os campos do request e da resposta.
 - `references/erros.md`: erros com corpo real e casos de borda.

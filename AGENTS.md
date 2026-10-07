@@ -7,3 +7,4 @@ Este repositório traz Agent Skills da Partners API da Zoppy em `skills/`.
   (`node skills/<skill>/scripts/validate.mjs --schema=<nome> '<json>'`) e corrija todo ERRO.
 - Token e `zoppy-access` vêm de variáveis de ambiente (`ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS`). Nunca escreva esses valores em código ou arquivo.
 - `skills/*/scripts/validate.mjs` é gerado por `npm run build` a partir de `tools/validate.mjs`; não edite a cópia.
+- Evals ficam em `evals/<skill>/<caso>/` no formato do `claude plugin eval` (`prompt.md` + `graders/*.md`).

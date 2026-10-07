@@ -65,7 +65,8 @@ node skills/zoppy-partners-pedidos/scripts/validate.mjs --schema=pedido.create -
 ```
 
 Saída `0` sem erro (avisos podem aparecer), `1` com erro, `2` uso incorreto. `--list-schemas` lista os payloads
-da skill e `--json` devolve o resultado para máquina. O validador exige Node 18 ou mais novo e não tem dependências.
+da skill, `--json` devolve o resultado para máquina e `--help` mostra o uso. O validador exige Node 18 ou mais novo e
+não tem dependências. Dentro de uma skill instalada, `scripts/` é relativo à pasta da skill, não ao seu projeto.
 
 ## Rodar os exemplos contra a sua conta de teste
 
@@ -85,6 +86,19 @@ npm run check     # confere formato, segredos e cópias do validador
 ```
 
 Não edite `skills/*/scripts/validate.mjs`: ele é gerado. A fonte é `tools/validate.mjs`.
+
+### Evals
+
+`evals/<skill>/<caso>/` segue o formato do `claude plugin eval`: `prompt.md` traz o pedido do desenvolvedor e
+`graders/` traz os critérios (`criterios.md`, julgado por modelo) e a conferência de que a skill certa foi acionada
+(`skill-acionada.md`). Cada execução chama o modelo e tem custo.
+
+```bash
+claude plugin eval . --runs 1                     # todos os casos, com e sem o plugin
+claude plugin eval . --tag zoppy-partners-pedidos  # só uma skill
+```
+
+O resultado fica em `evals/results/`, que não é versionado.
 
 ## Licença
 

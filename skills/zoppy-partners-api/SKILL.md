@@ -1,6 +1,6 @@
 ---
 name: zoppy-partners-api
-description: "Visão geral da Partners API da Zoppy e ponto de partida de qualquer integração: autenticação com Authorization Bearer mais o header zoppy-access, URLs base, formato de rota, paginação (after, page, pageSize), datas ISO 8601 e fuso, formato de erro, ordem de envio, idempotência e qual skill usar para cada recurso. Use antes de escrever código que chama a Partners API e ao depurar 401, 403 com página HTML, 422 Invalid after date, datas gravadas 3 horas fora ou paginação que pula registros. Gatilhos: Partners API Zoppy, integrar com a Zoppy, token da Zoppy, zoppy-access, Just a moment, listar clientes Zoppy, paginação Zoppy, ordem de envio; Zoppy Partners API authentication, base URL, pagination, error format, integration order. Não use para os campos de cada recurso: clientes em zoppy-partners-clientes, produtos em zoppy-partners-produtos, pedidos, lojas e vendedores em zoppy-partners-pedidos, carrinho em zoppy-partners-carrinho-abandonado, cupons e webhooks em zoppy-partners-cupons-webhooks."
+description: "Explica o que vale para todos os recursos da Partners API da Zoppy e indica a skill de cada um: autenticação com Authorization Bearer mais o header zoppy-access, URLs base, formato de rota, paginação (after, page, pageSize), datas ISO 8601 e fuso, formato de erro, ordem de envio e idempotência. Use antes de escrever código que chama a Partners API e ao depurar 401, 403 com página HTML, 422 Invalid after date, datas gravadas 3 horas fora ou paginação que pula registros. Gatilhos: Partners API Zoppy, integrar com a Zoppy, token da Zoppy, zoppy-access, Just a moment, listar clientes Zoppy, paginação Zoppy, ordem de envio; em inglês: Zoppy Partners API authentication, base URL, pagination, error format, integration order. Não use para os campos de cada recurso: clientes em zoppy-partners-clientes, produtos em zoppy-partners-produtos, pedidos, lojas e vendedores em zoppy-partners-pedidos, carrinho em zoppy-partners-carrinho-abandonado, cupons e webhooks em zoppy-partners-cupons-webhooks."
 ---
 
 # Partners API da Zoppy: visão geral e roteamento
@@ -212,6 +212,10 @@ carrinho como "já foi": busque o registro por `GET /orders/external/{externalId
 | NPS, campanhas, empresa, campos personalizados | `/nps`, `/campaigns`, `/companies`, `/custom-field` | fora do escopo destas skills; veja a doc pública da Partners API |
 
 ## Exemplos
+
+Use os exemplos como modelo de código: leia o arquivo e adapte ao projeto. Só execute um exemplo se
+o usuário pedir, com as três variáveis de ambiente de uma conta de teste e a partir da pasta desta
+skill (os caminhos abaixo são relativos a ela).
 
 Rodam contra a conta das variáveis de ambiente, só leem dados e saem com código 0 quando a
 resposta confere:
