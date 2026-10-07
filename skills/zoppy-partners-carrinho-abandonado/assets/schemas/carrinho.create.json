@@ -1,7 +1,11 @@
 {
     "description": "Corpo do POST /abandoned-carts (criar carrinho abandonado)",
     "type": "object",
-    "required": ["customerId", "subtotal", "url"],
+    "required": [
+        "customerId",
+        "subtotal",
+        "url"
+    ],
     "properties": {
         "externalId": {
             "type": "string",
@@ -17,11 +21,17 @@
             "description": "Valor bruto do carrinho, frete incluído. Número; string responde 400."
         },
         "discount": {
-            "type": ["number", "null"],
+            "type": [
+                "number",
+                "null"
+            ],
             "description": "Desconto. Mande 0 quando não houver: sem o campo o total gravado vira 0."
         },
         "shipping": {
-            "type": ["number", "null"],
+            "type": [
+                "number",
+                "null"
+            ],
             "description": "Frete. Mande 0 quando não houver: sem o campo o total gravado vira 0."
         },
         "url": {
@@ -31,7 +41,7 @@
         },
         "lineItems": {
             "type": "array",
-            "description": "Itens do carrinho. Precisa ser lista: objeto responde 500 e o carrinho fica gravado sem itens.",
+            "description": "Itens do carrinho. Precisa ser lista: objeto, texto ou número responde 500 e o carrinho fica gravado sem itens; null ou \"\" vale como sem itens.",
             "items": {
                 "type": "object",
                 "description": "{ productId: id Zoppy (UUID) do produto, quantity: número }"
@@ -40,7 +50,7 @@
         "createdAt": {
             "type": "string",
             "format": "date-time",
-            "description": "Data em que o carrinho foi abandonado, ISO 8601 com fuso. Ausente vira o momento do recebimento."
+            "description": "Data em que o carrinho foi abandonado, ISO 8601 com fuso. Ausente vira o momento do recebimento. A API também aceita outros formatos, mas este validador exige ISO 8601 com fuso."
         },
         "updatedAt": {
             "type": "string",

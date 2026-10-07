@@ -1,5 +1,5 @@
 // Regras de negócio do PUT /abandoned-carts/:id.
-import { blankUrl, lineItems, missingAmounts, negativeTotal, unknownFields } from './carrinho-regras.mjs';
+import { blankUrl, lineItems, missingAmounts, negativeDiscount, negativeTotal, unknownFields } from './carrinho-regras.mjs';
 
 const KNOWN = ['subtotal', 'discount', 'shipping', 'url', 'lineItems'];
 const NOT_UPDATABLE = ['externalId', 'customerId', 'createdAt', 'updatedAt'];
@@ -8,7 +8,7 @@ function notUpdatable(payload) {
     return NOT_UPDATABLE.filter((field) => payload[field] !== undefined).map((field) => ({
         level: 'warning',
         field,
-        message: 'ignorado no PUT: o valor gravado na criação continua'
+        message: 'ignorado no PUT (quando válido): o valor gravado na criação continua'
     }));
 }
 
@@ -21,6 +21,7 @@ export default function rules(payload) {
     return [
         ...missingAmounts(payload),
         ...negativeTotal(payload),
+        ...negativeDiscount(payload),
         ...blankUrl(payload),
         ...lineItems(payload),
         ...missingLineItems(payload),

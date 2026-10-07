@@ -6,7 +6,7 @@
     "externalId": { "type": ["string", "null"], "description": "Ausente mantém o valor gravado; null limpa." },
     "name": { "type": "string", "minLength": 1, "description": "Não pode ser igual ao nome de outro produto da conta: 422 Product name is already being used." },
     "status": { "type": "string", "enum": ["publish", "draft", "inactive"] },
-    "specification": { "type": ["string", "null"], "enum": ["m", "f", null], "description": "Ausente ou null mantém o valor gravado." },
+    "specification": { "type": ["string", "null"], "enum": ["m", "f", "", null], "description": "Ausente ou null mantém o valor gravado; \"\" limpa. false e 0 passam na API mas gravam texto, por isso o validador recusa." },
     "price": { "type": "number", "minimum": 0 },
     "categories": { "type": ["array", "null"], "items": { "type": "string", "minLength": 1 }, "description": "Substitui a lista inteira. Ausente, null ou [] deixa o produto sem categorias." },
     "provider": { "type": ["string", "null"], "minLength": 1, "description": "Ausente ou null mantém o valor gravado." }

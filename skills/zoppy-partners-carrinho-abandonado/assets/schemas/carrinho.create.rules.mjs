@@ -1,5 +1,5 @@
 // Regras de negócio do POST /abandoned-carts.
-import { blankUrl, lineItems, missingAmounts, negativeTotal, unknownFields } from './carrinho-regras.mjs';
+import { blankUrl, lineItems, missingAmounts, negativeDiscount, negativeTotal, unknownFields } from './carrinho-regras.mjs';
 
 const KNOWN = ['externalId', 'customerId', 'subtotal', 'discount', 'shipping', 'url', 'lineItems', 'createdAt', 'updatedAt'];
 
@@ -22,6 +22,7 @@ export default function rules(payload) {
     return [
         ...missingAmounts(payload),
         ...negativeTotal(payload),
+        ...negativeDiscount(payload),
         ...blankUrl(payload),
         ...lineItems(payload),
         ...missingExternalId(payload),

@@ -9,7 +9,8 @@
 - Busca primeiro por `GET {base}/abandoned-carts/external/{cart.id}`; 404 significa criar, 200 significa atualizar.
 - Cria com `POST /abandoned-carts` levando `externalId: cart.id`, `customerId`, `createdAt: cart.abandonedAt`.
 - Atualiza com `PUT /abandoned-carts/{id}` usando o `id` Zoppy devolvido pela busca, não o `externalId`.
-- No PUT manda `url` (sem ela a API responde 500), `subtotal`, `discount` e `shipping`, e a **lista completa** de `lineItems` (o PUT substitui os itens).
+- No PUT manda `url` não vazia (sem a chave a API responde 500; vazia apaga o link), `subtotal`, `discount` e `shipping`, e a **lista completa** de `lineItems` (o PUT substitui os itens).
+- Trata 500 no PUT como gravação parcial (valores trocados, itens antigos apagados) e refaz o PUT com a lista certa, em vez de assumir que nada mudou.
 - `subtotal = productsTotal + shipping` nos dois casos; `discount` e `shipping` sempre presentes (0 quando não houver).
 - Não manda `externalId`, `customerId` nem `createdAt` esperando que o PUT os altere.
 - Valida o corpo com `--schema=carrinho.create` e `--schema=carrinho.update`.
@@ -18,4 +19,4 @@
 
 - Repetir o POST com outro `externalId` para "contornar" o 422 (duplica carrinhos).
 - Mandar no PUT só os itens alterados.
-- Omitir `url` no PUT.
+- Omitir `url` no PUT ou mandar `url` vazia.

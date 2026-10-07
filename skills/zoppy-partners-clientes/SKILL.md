@@ -47,7 +47,7 @@ O `POST` responde 200, não 201. A busca por id, externalId ou telefone responde
 | `gender` | string | não | Gravado em maiúsculas. Envie `m` ou `f` |
 | `customFields` | array | não | Campos personalizados, fora do escopo desta skill |
 
-Campos do `address`: `address1` (rua e número), `address2` (complemento), `city`, `state` (UF), `postcode` (CEP, com ou sem hífen), `country`, `latitude`, `longitude`. A API não valida nenhum deles: aceita `address: {}` e grava o endereço vazio, e converte tipo errado em texto (`true` vira `"1"`). Mande sempre `address1`, `city`, `state` e `postcode` como texto. Na resposta o `postcode` volta só com dígitos.
+Campos do `address`: `address1` (rua e número), `address2` (complemento), `city`, `state` (UF), `postcode` (CEP, com ou sem hífen), `country`, `latitude`, `longitude`. A API não valida nenhum deles: no `POST` aceita `address: {}` e grava o endereço vazio; nos campos de texto converte tipo errado em texto (`true` vira `"1"`); `latitude` ou `longitude` que não são número viram `0`. Mande sempre `address1`, `city`, `state` e `postcode` como texto. Na resposta o `postcode` volta só com dígitos.
 
 Não existe campo de CPF, de opt-in nem de consentimento de mensagem. Campos desconhecidos (`cpf`, `optIn` etc.) são ignorados sem erro e não voltam na resposta.
 
@@ -64,23 +64,26 @@ A API tira tudo que não é dígito, remove um `0` inicial e aceita `55` e `0` a
 | `(11) 2000-0001` (fixo, começa com 2 a 5) | `1120000001` (fica com 10 dígitos) |
 | `123`, `119000010`, `119000010101`, `""` | 422 `Phone invalid` |
 | `11900001015` como número JSON | 400 `phone must be a string` |
+| `55119000806` (55 + DDD + 7 dígitos, falta um) | `55119000806` (lido como DDD 55) |
 
-Só existe telefone brasileiro. Número estrangeiro que caiba no formato é aceito e lido como DDD brasileiro: `+1 415 555 0100` vira `14155550100`. O validador avisa nesse caso.
+Só existe telefone brasileiro. Número estrangeiro que caiba no formato é aceito e lido como DDD brasileiro: `+1 415 555 0100` vira `14155550100` e `001 415 000 8005` vira `14150008005`. O validador avisa quando o número começa com `+` ou `00` sem `55`, e quando 11 dígitos começando com `55` seriam lidos como DDD 55.
 
 ## Sem duplicar: o que o POST faz com dado repetido
 
 | Situação no POST | Resultado |
 |---|---|
-| Telefone já cadastrado (em qualquer formato) | 200 com o cliente **existente, sem nenhuma alteração**: mesmo id, mesmo nome, e-mail e `externalId` antigos |
+| Telefone já cadastrado (em qualquer formato) | 200 com o cliente **existente**: mesmo id, sem alterar nome, e-mail, endereço nem `externalId` |
 | Mesmo `externalId`, telefone diferente | Cria **outro** cliente. Depois disso, `GET /customers/external/{externalId}` devolve só um deles, sem garantia de qual |
 | Mesmo e-mail, telefone diferente | Cria outro cliente |
-| Telefone de um cliente já excluído | Cria cliente novo, com id novo |
+| Telefone de um cliente já excluído | Cria cliente novo, com id novo. Se o endereço do cliente excluído ainda existir (aconteceu ao excluir o cliente logo depois de criar um pedido concluído para ele), o cliente novo fica com esse endereço antigo e o `address` enviado é ignorado |
 
 Por isso, para sincronizar, faça upsert:
 
 1. `GET /customers/external/{externalId}`. Se responder 200, faça `PUT /customers/{id}` com o payload.
 2. Se responder 422, faça `POST /customers`.
-3. Se o `externalId` da resposta do `POST` for diferente do que você mandou, o telefone já era de outro cadastro e nada foi gravado. Faça `PUT /customers/{id}` nesse id com o seu payload: ele atualiza os dados e grava o seu `externalId`.
+3. Se o `externalId` **ou o endereço** da resposta do `POST` forem diferentes do que você mandou, o telefone já era de outro cadastro e o que você mandou não foi gravado. Faça `PUT /customers/{id}` nesse id com o seu payload: ele atualiza os dados e grava o seu `externalId`.
+
+O `PUT` do passo 3 substitui o `externalId` do outro cadastro: o `externalId` antigo deixa de ser encontrado (422). Se dois registros seus dividem o mesmo telefone (família, telefone da loja), cada sincronização passa o vínculo de um para o outro; trate esses casos antes de enviar.
 
 Código completo: `assets/examples/03-upsert-por-externalid.mjs`.
 
@@ -88,16 +91,18 @@ Código completo: `assets/examples/03-upsert-por-externalid.mjs`.
 
 O `PUT /customers/{id}` usa o id da Zoppy (o `id` da resposta, não o seu `externalId`) e exige os mesmos campos obrigatórios do `POST`.
 
-- Sempre substituídos: `firstName`, `lastName`, `phone`, `address.address1`, `address.city`, `address.state`, `address.postcode`. Mande os valores atuais se não quiser mudar.
-- Mantidos quando omitidos: `email`, `birthDate`, `gender`, `externalId`, `address.address2`, `address.country`, `address.latitude`, `address.longitude`. `email` e `birthDate` com `null` também mantêm o valor; não há como apagá-los.
-- `gender: ""` apaga o gênero.
+- Sempre substituídos: `firstName`, `lastName` e `phone` (são obrigatórios).
+- Todos os outros campos, inclusive os do `address`, só mudam quando a chave vem no corpo; chave ausente mantém o valor atual. Com `address: {}` o endereço fica como estava, mas a resposta do `PUT` mostra esses campos ausentes ou vazios: confira com `GET`.
+- `null` mantém o valor em `email`, `birthDate`, `gender`, `address2`, `country`, `latitude` e `longitude`, mas apaga `address1`, `city`, `state` e `postcode`.
+- Texto vazio apaga: `email: ""`, `gender: ""`, `address2: ""`. `externalId: ""` desfaz o vínculo com o seu id (a resposta passa a trazer o id da Zoppy em `externalId`).
+- `birthDate` não pode ser apagado: `null` mantém e `""` responde 400.
 - `latitude` e `longitude` só são gravadas no `PUT`; no `POST` são ignoradas.
-- Trocar o telefone é aceito. Em segundo plano, a Zoppy passa para o número novo o histórico ligado ao número antigo (os pedidos passam a ter o telefone novo). A API não impede usar um telefone que já pertence a outro cliente: os dois ficam com o mesmo número.
+- Trocar o telefone é aceito. Em segundo plano, a Zoppy passa para o número novo o histórico ligado ao número antigo (os pedidos passam a ter o telefone novo). A API não impede usar um telefone que já pertence a outro cliente: os dois ficam com o mesmo número, e a busca por telefone e o `POST` passam a devolver um dos dois, sem garantia de qual.
 - A resposta do `PUT` pode trazer o `updatedAt` anterior. Para conferir, leia de volta com `GET /customers/{id}`.
 
 ## Datas e gênero
 
-`birthDate` volta em UTC. `"1990-05-15"` e `"1990-05-15T00:00:00.000Z"` gravam `1990-05-15T00:00:00.000Z`. Com fuso, a API converte: `"1990-05-15T00:00:00-03:00"` vira `1990-05-15T03:00:00.000Z`. Com hora e sem fuso, a hora é lida no horário de Brasília: `"1990-05-15 10:00"` vira `1990-05-15T13:00:00.000Z`. `"15/05/1990"` e `""` respondem 400 `birthDate must be a Date instance`. Prefira `YYYY-MM-DD`.
+`birthDate` volta em UTC. `"1990-05-15"` e `"1990-05-15T00:00:00.000Z"` gravam `1990-05-15T00:00:00.000Z`. Com fuso, a API converte: `"1990-05-15T00:00:00-03:00"` vira `1990-05-15T03:00:00.000Z`. Com hora e sem fuso, a hora é lida no horário de Brasília: `"1990-05-15 10:00"` vira `1990-05-15T13:00:00.000Z`. `"15/05/1990"` e `""` respondem 400 `birthDate must be a Date instance`. Data impossível passa e rola para o mês seguinte: `"1990-02-30"` grava `1990-03-02T00:00:00.000Z`. Prefira `YYYY-MM-DD` e confira a data antes de enviar.
 
 `gender` aceita qualquer texto e grava em maiúsculas: `"f"` vira `"F"`, `"masculino"` vira `"MASCULINO"`. No `POST`, `""` grava sem gênero (`null`). Número responde 400.
 
@@ -116,7 +121,7 @@ Detalhes de pedido: skill `zoppy-partners-pedidos`.
 | 400 | `{"message":["phone must be a string"],"error":"Bad Request"}` | `phone`, `firstName` ou `lastName` ausente ou não texto; vale também para `externalId` e `gender` não texto |
 | 400 | `{"message":["birthDate must be a Date instance"]}` | data em formato que não vira data |
 | 422 | `{"message":"Phone invalid","error":"Unprocessable Entity","statusCode":422}` | telefone que não vira DDD + 8 ou 9 dígitos |
-| 422 | `{"message":"Address is required"}` | `POST` sem `address` |
+| 422 | `{"message":"Address is required"}` | `POST` sem `address` (com telefone inválido também: `"Phone invalid, Address is required"`) |
 | 422 | `{"message":"Customer not found"}` | busca sem resultado |
 | 404 | `{"message":"Customer not found","error":"Not Found"}` | `PUT` ou `DELETE` com id que não existe (inclui excluir duas vezes) |
 | 500 | `{"statusCode":500,"message":"Internal server error"}` | `PUT` sem `address` |

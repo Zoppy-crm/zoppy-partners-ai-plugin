@@ -16,15 +16,16 @@
 | `externalId` | string | não | número: 400 `externalId must be a string`; repetido entre carrinhos não excluídos: 422 | como veio; ausente fica `null` |
 | `customerId` | string | sim | ausente ou número: 400 `customerId must be a string`; `""`, id inexistente na conta ou `externalId` do cliente: 422 `Customer not found` | o cliente do carrinho |
 | `subtotal` | number | sim | ausente ou string (`"199.90"`): 400 `subtotal must be a number conforming to the specified constraints` | o valor enviado |
-| `discount` | number ou null | não | string: 400 | o valor enviado; `null` conta como 0 no total |
+| `discount` | number ou null | não | string: 400 | o valor enviado; `null` conta como 0 no total; negativo aumenta o total |
 | `shipping` | number ou null | não | string: 400 | não é guardado separado; entra só na conta do total |
 | `url` | string | sim | ausente ou `""`: 422 `Abandoned Cart URL is required.`; número: 400 `url must be a string` | sem espaços nas pontas; só espaços vira `""` |
-| `lineItems` | lista | não | só confere que é lista ao gravar (objeto: 500 depois de gravar o carrinho) | um item por produto encontrado |
-| `createdAt` | data | não | inválida: 400 `createdAt must be a Date instance` | a data enviada; ausente, o momento do recebimento |
+| `lineItems` | lista | não | nenhuma antes de gravar: objeto, texto ou número dá 500 depois de gravar o carrinho; `null` ou `""` vale como sem itens | um item por produto encontrado |
+| `createdAt` | data | não | inválida: 400 `createdAt must be a Date instance` | a data enviada (ver Datas); ausente, o momento do recebimento |
 | `updatedAt` | data | não | inválida: 400 | ignorado; grava o momento do recebimento |
 
 Total gravado: `subtotal - discount - shipping`. Se `discount` ou `shipping` estiver ausente
-(não `null`, ausente), o total gravado é `0`.
+(não `null`, ausente), o total gravado é `0`, e a resposta do POST traz `total` e `subtotal`
+`null` (sem `discount`, o campo nem aparece); só o GET mostra o `0`.
 
 Campos fora desta lista são aceitos e ignorados, sem erro.
 
@@ -35,10 +36,10 @@ Mesmo formato do POST sem `externalId` e `customerId`.
 | Campo | Comportamento no PUT |
 |---|---|
 | `subtotal` | obrigatório (400 se ausente); total recalculado com `discount` e `shipping` |
-| `discount`, `shipping` | ausentes: total gravado vira `0` |
-| `url` | obrigatório na prática: ausente responde 500 e nada é alterado |
-| `lineItems` | apaga os itens atuais e grava a lista enviada; ausente deixa o carrinho sem itens |
-| `externalId`, `customerId`, `createdAt`, `updatedAt` | ignorados; os valores atuais continuam |
+| `discount`, `shipping` | ausentes: total gravado vira `0` e a resposta do PUT traz `total` `null`; sem `discount`, o desconto anterior continua gravado |
+| `url` | a chave é obrigatória: ausente responde 500 e nada é alterado. `""` ou só espaços responde 200 e grava `""`, apagando o link de recuperação |
+| `lineItems` | apaga os itens atuais e grava a lista enviada; ausente deixa o carrinho sem itens. Lista inválida (não lista, item `null` ou sem `productId`) responde 500 depois de trocar valores e `url` e apagar os itens antigos; ficam só os itens anteriores ao inválido |
+| `externalId`, `customerId`, `createdAt`, `updatedAt` | ignorados quando válidos; os valores atuais continuam. `createdAt` ou `updatedAt` inválido: 400 |
 
 O `updatedAt` que volta na resposta do PUT pode ser o anterior. Para ver o valor gravado, faça
 `GET /abandoned-carts/:id`.
@@ -50,9 +51,11 @@ O `updatedAt` que volta na resposta do PUT pode ser o anterior. Para ver o valor
 ```
 
 - `productId`: id Zoppy do produto (o `id` devolvido ao criar o produto). Com o `externalId` do
-  produto ou um id inexistente, o item é descartado sem erro. Sem `productId`: 500, com o
-  carrinho já gravado sem esse item e sem os seguintes.
-- `quantity`: não validada. Negativa é gravada negativa, `"2"` vira `2`, ausente vira `null`.
+  produto, um id inexistente ou `null`, o item é descartado sem erro. Item sem `productId`, ou o
+  próprio item `null`: 500, com o carrinho já gravado só com os itens anteriores a ele.
+- `quantity`: não validada. O GET mostra o gravado: negativa fica negativa, `"2"` vira `2`,
+  `"abc"` vira `0`, decimal é arredondado (`1.5` vira `2`), ausente vira `null`. A resposta do
+  POST repete o valor enviado.
 
 ## Resposta
 
@@ -81,8 +84,8 @@ Exemplo lido de volta de um envio com `subtotal 100, discount 10, shipping 20`:
 | Parâmetro | Obrigatório | Regra |
 |---|---|---|
 | `after` | sim | carrinhos com `createdAt >= after`. Aceita `2026-10-01` ou data e hora com fuso. Ausente ou inválido: 422 `Invalid after date` |
-| `page` | sim | a partir de 1. Ausente: 422 `Page parameter is required`; 0: 422 `Page needs to be bigger than 0` |
-| `pageSize` | sim | de 1 a 50. Ausente: 422 `Page size parameter is required`; 51: 422 `Page size needs to be less than or equal 50` |
+| `page` | sim | a partir de 1. Ausente ou não numérico (`abc`): 422 `Page parameter is required`; 0: 422 `Page needs to be bigger than 0` |
+| `pageSize` | sim | inteiro de 1 a 50. Ausente: 422 `Page size parameter is required`; 0: 422 `Page size needs to be bigger than 0`; 51: 422 `Page size needs to be less than or equal 50`; decimal (`1.5`): 500 |
 | `updatedAt` | não | carrinhos com `updatedAt >= updatedAt`. Inválido: 422 `Invalid updatedAt date` |
 
 Resposta: `{"data":[...],"pagination":{"page":1,"pageSize":50,"totalRecords":5,"totalPages":1}}`.
@@ -93,6 +96,11 @@ Como `after` filtra pelo `createdAt`, um carrinho criado com `createdAt` antigo 
 
 - Mande ISO 8601 com fuso: `2026-10-01T10:00:00-03:00`. Volta em UTC:
   `2026-10-01T13:00:00.000Z`.
-- Sem fuso (`2026-09-05 10:26`) a API aceita e lê como horário de Brasília:
+- Data e hora sem fuso (`2026-09-05 10:26`) a API aceita e lê como horário de Brasília:
   `2026-09-05T13:26:00.000Z`.
-- A data é gravada em segundos inteiros: na leitura os milissegundos voltam `.000`.
+- Só a data (`2026-09-05`) vira meia-noite UTC: `2026-09-05T00:00:00.000Z` (21h do dia 4 em
+  Brasília).
+- Número (epoch em milissegundos) também é aceito pela API (`1757078760000` vira
+  `2025-09-05T13:26:00.000Z`), mas o validador da skill exige ISO 8601 com fuso.
+- A data é gravada em segundos inteiros. A resposta do POST repete os milissegundos enviados
+  (`.789`); GET e listagem devolvem `.000`.

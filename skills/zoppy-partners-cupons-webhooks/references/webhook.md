@@ -11,8 +11,8 @@
 
 ## 1. Quando a Zoppy chama a sua URL
 
-O evento `coupon_create` sai quando um fluxo de automação da Zoppy gera um cupom (a etapa de
-criar cupom, por exemplo um giftback depois de um pedido `completed`). Não sai quando você
+O evento `coupon_create` sai quando a Zoppy gera um cupom, por exemplo pela etapa de criar cupom
+de um fluxo de automação (um giftback depois de um pedido `completed`). Não sai quando você
 registra um cupom com `POST /coupons` ou `POST /coupons/shared`, e não depende do campo
 `createCoupon` do pedido. O fluxo de automação é configurado no painel da Zoppy, não pela API.
 
@@ -27,7 +27,9 @@ registra um cupom com `POST /coupons` ou `POST /coupons/shared`, e não depende 
 | `DELETE /webhooks/{id}` | | 200 `{"result":true}`; some da lista |
 
 Erros: `event` ausente ou diferente de `coupon_create` dá 422 `Tipo de evento inválido`; `url`
-ausente dá 422 `URL obrigatória`; `id` inexistente em `PUT` ou `DELETE` dá 404
+ausente dá 422 `URL obrigatória`; `url` que não é texto dá 400 `["url must be a string"]`. A
+`url` é gravada com até 255 caracteres: acima disso é cortada sem aviso (a resposta
+do `POST` mostra a inteira, `GET /webhooks` mostra a cortada); `id` inexistente em `PUT` ou `DELETE` dá 404
 `Configuração de webhook não encontrada`. O cadastro vale para a conta do token usado; cada conta
 precisa do seu.
 

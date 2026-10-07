@@ -53,16 +53,22 @@ voltam 422 com a mensagem em `message`; busca sem resultado volta 404 `Coupon no
 | Campo | Tipo | Obrigatório | Se não vier |
 |---|---|---|---|
 | `code` | string | sim | 422 `O código do cupom deve ser informado.` |
-| `amount` | número | sim, diferente de zero | 422 `O valor do cupom deve ser informada.` |
+| `amount` | número maior que zero | sim | 422 `O valor do cupom deve ser informada.` (também com `0` número) |
 | `phone` | string, 10 dígitos ou mais | sim | 422 `O número de celular do cupom é invalido.` |
-| `externalId` | string, até 255 caracteres | sim | 422 `O Id externo do cupom deve ser informado.` |
-| `type` | `percent` ou `fixed_cart` | não | `fixed_cart`; outro valor dá 422 `O tipo do cupom é inválido.` |
+| `externalId` | string, até 255 caracteres | sim (`0` conta como ausente) | 422 `O Id externo do cupom deve ser informado.` |
+| `type` | `percent` ou `fixed_cart` | não | `fixed_cart`; um texto como `"xyz"` dá 422 `O tipo do cupom é inválido.` |
 | `minPurchaseValue` | número | não | `0` em `percent`; o próprio `amount` em `fixed_cart` |
 | `expiryDate` | data ISO 8601 com fuso | não | `2100-01-01T00:00:00.000Z` |
 | `awaitingOrder` | boolean | não | `true` (veja as regras abaixo) |
 
-- `code` é único na conta, somando individuais e compartilhados: repetido dá 422
-  `O código do coupon já está sendo utilizado`.
+- `code` é único entre os cupons não excluídos da conta, somando individuais e compartilhados:
+  repetido dá 422 `O código do coupon já está sendo utilizado`. Depois que um cupom é excluído, o
+  código pode ser usado de novo.
+- A API não confere tudo: `amount` `"0"` (texto) ou negativo é gravado assim, e `type` `"0"`,
+  `"1"` ou `0` passa e é gravado com esse valor. Mande `amount` número maior que zero e `type`
+  só `percent` ou `fixed_cart`.
+- `externalId` não é único: a Zoppy aceita o mesmo valor em mais de um cupom. Na busca por
+  `externalId`, um cupom individual vem antes de um compartilhado com o mesmo valor.
 - Ignorados neste endpoint: `usageLimit` (o individual sempre tem um uso), `usageLimitPerUser` e
   `description` (não são gravados).
 - A resposta do `POST` não traz `customer`; as buscas trazem `customer` quando existe um cliente
@@ -91,28 +97,41 @@ Mesmos campos, com estas diferenças:
 - Sem cliente: `phone` é ignorado e o cupom não aparece nas buscas por telefone. A resposta não
   tem `used`, `acumulative` nem `customer`, e tem `usageLimit`.
 - `usageLimit` é respeitado. Sem ele, o cupom aceita um único uso.
-- `externalId` é guardado como número inteiro de 0 a 2147483647. Veja a regra 3.
-- `amount` é guardado como inteiro: `12.75` vira `13` nas consultas (a resposta do `POST` ainda
-  mostra `12.75`).
+- `externalId` é guardado como número inteiro; mande de 1 a 2147483647 (`0` dá 422 como ausente). Veja a regra 3.
+- `amount` é guardado arredondado para inteiro: `12.75` vira `13` e `12.5` vira `12` nas
+  consultas (a resposta do `POST` ainda mostra o valor enviado).
 - `PUT /coupons/...` não atualiza compartilhado (422 `Coupon not found`) e
   `DELETE /coupons/externalId/{id}` não o encontra. Exclua pelo `id` ou pelo `code`.
 
 ## Regras que mais causam erro
 
-**1. `awaitingOrder` ausente vale `true` e o próximo pedido consome o cupom.** Com `true`, o
-próximo pedido do mesmo telefone que chegar sem `couponCode` recebe o cupom mais recente que está
-aguardando, mesmo que vencido: o cupom vira `used: true` e, se o pedido veio com `discount` 0, a
-Zoppy preenche o desconto pelo cupom. Mande `"awaitingOrder": false` quando o cupom só deve ser
-baixado pelo código.
+**1. `awaitingOrder` ausente vale `true` e um pedido sem código consome o cupom, mesmo já usado.**
+Com `awaitingOrder` ligado, o próximo pedido do mesmo telefone que chegar sem `couponCode` recebe
+o cupom mais recente desse telefone que ainda tem `awaitingOrder` ligado, sem conferir validade
+nem se ele já foi usado: o pedido ganha o `couponCode`, o cupom vira `used: true` e, se o pedido
+veio com `discount` 0, a Zoppy preenche o desconto pelo cupom. Dois casos em que o mesmo cupom
+desconta duas vezes:
+- você marca o cupom como usado com `PUT {"used": true}`: ele continua aguardando e o próximo
+  pedido sem código recebe esse cupom de novo;
+- o cupom é baixado por `couponCode` enquanto há um cupom mais novo aguardando no mesmo telefone:
+  o pedido seguinte sem código recebe o mais novo, e o outro depois dele.
+
+Como evitar: registre com `"awaitingOrder": false` o cupom que só deve ser baixado pelo código;
+para baixar à mão, mande `PUT {"used": true, "awaitingOrder": false}`. Nos dois casos, um pedido
+sem código chegou depois e não recebeu o cupom.
 
 **2. O telefone é gravado como veio.** `"+55 (11) 98765-4321"` fica gravado assim, e
 `GET`/`PUT`/`DELETE /coupons/phone/{phone}` só acham o cupom com o mesmo texto. Mande só dígitos
 e consulte com os mesmos dígitos.
 
-**3. No compartilhado, `externalId` texto vira 0.**
+**3. No compartilhado, `externalId` texto não é preservado.** O texto vira o número do começo
+dele (`"123abc"` vira `123`) ou `0` se não começa com dígito, sempre com resposta 200. Enquanto
+existir na conta um compartilhado com `externalId` `0`, qualquer busca
+`GET /coupons/external/{texto}` que não ache um cupom individual devolve esse compartilhado em vez
+de 404.
 
 ```jsonc
-// Errado: responde 200, grava externalId 0. GET /coupons/external/abc-1 devolve OUTRO cupom
+// Errado: responde 200 e grava externalId 0
 { "externalId": "abc-1", "code": "PROMO20", "amount": 20, "usageLimit": 500 }
 // Errado: acima de 2147483647 grava 2147483647 e a busca pelo seu número dá 404
 { "externalId": 3000000000, "code": "PROMO20", "amount": 20, "usageLimit": 500 }
@@ -156,7 +175,8 @@ O resgate é informado no pedido, no campo `couponCode` (skill zoppy-partners-pe
   `PUT /orders/{id}` recusa com 422 `Coupon code not found`, inclusive para código de cupom
   compartilhado.
 - Depois de usado, o cupom continua aparecendo em `GET /coupons/code/{code}` com `used: true` e
-  `isValid: false`, e sai das buscas por telefone.
+  `isValid: false`, e sai das buscas por telefone. Isso não impede que ele seja aplicado de novo
+  a um pedido sem código (regra 1).
 
 ## Webhook `coupon_create` (fluxo A)
 
@@ -164,7 +184,9 @@ Cadastro, um por conta:
 
 - `POST /webhooks` com `event` (único valor aceito: `coupon_create`), `url` e, opcional,
   `bearerToken`. Evento diferente ou ausente dá 422 `Tipo de evento inválido`; sem `url`, 422
-  `URL obrigatória`. A `url` não é validada além de não vir vazia.
+  `URL obrigatória`; `url` que não é texto dá 400 `["url must be a string"]`. A `url` não é
+  validada além disso e é gravada com até 255 caracteres: acima disso é cortada sem aviso (a
+  resposta do `POST` mostra a URL inteira, `GET /webhooks` mostra a cortada).
 - Um segundo `POST /webhooks` para o mesmo evento não cria outro cadastro: substitui `url` e
   `bearerToken` do existente (mesmo `id`). Sem `bearerToken`, o token salvo é apagado.
 - `PUT /webhooks/{id}` exige `event` e `url` de novo; `id` inexistente dá 404
@@ -172,7 +194,7 @@ Cadastro, um por conta:
 - `GET /webhooks` devolve a lista com `bearerToken` em texto. Cadastrar a URL não dispara
   chamada nenhuma.
 
-O que a Zoppy envia quando um fluxo de automação gera um cupom:
+O que a Zoppy envia quando gera um cupom, por exemplo por um fluxo de automação:
 
 ```http
 POST <sua url>

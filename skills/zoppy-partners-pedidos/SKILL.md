@@ -44,7 +44,7 @@ O `total` gravado é o valor dos produtos com desconto, **sem frete**. Por isso:
 - **`subtotal` = itens + frete, antes do desconto.** Se o `subtotal` vier só com os itens, o frete é descontado do total.
 - **`discount`** = desconto sobre os produtos.
 - **`shipping`** = frete cobrado do cliente. **Frete grátis ou zerado por cupom é `shipping: 0`**, e o frete não entra no `subtotal` nem no `discount`.
-- **Envie sempre `discount` e `shipping`, mesmo que 0.** Sem um deles a API responde 200 mas grava `total` 0.
+- **Envie sempre `discount` e `shipping`, mesmo que 0.** Sem um deles a API responde 200 mas grava `total` 0 (a resposta do `POST`/`PUT` traz `total` e `subtotal` `null`; o `GET` traz `total` 0).
 - A API não recusa total negativo: `subtotal` menor que `discount + shipping` grava total negativo sem erro.
 
 Na resposta, `total` é o valor gravado e `subtotal` é recalculado como `total + discount + shipping`.
@@ -80,7 +80,7 @@ Aceita exatamente, em minúsculas: `completed` (pago ou confirmado), `on-hold` (
 | `PUT` sem `createdAt`, com `completedAt` | **troca a data do pedido pela do `completedAt`** |
 | `PUT` sem os dois | mantém a data atual |
 
-Venda em 05/09 confirmada em 09/09 sem `createdAt` fica datada de 09/09 e não aparece no período da venda. **Envie sempre `createdAt`, inclusive no `PUT`.**
+Venda em 05/09 confirmada em 09/09 sem `createdAt` fica datada de 09/09 e não aparece no período da venda. **Envie sempre `createdAt`, inclusive no `PUT`.** O validador dá `ERRO` quando falta `createdAt` e vem `completedAt`.
 
 Formato: ISO 8601 com fuso, ex. `2026-09-05T10:26:00-03:00`. O que a API faz com outros formatos:
 
@@ -96,13 +96,13 @@ O validador recusa data sem fuso de propósito, para não depender dessa interpr
 
 ## `PUT` é reenvio completo
 
-O `PUT /orders/{id}` recalcula o total e substitui o pedido. Mande o pedido inteiro, como no `POST`, sem `externalId` e `customerId`:
+O `PUT /orders/{id}` recalcula o total e substitui o pedido. Mande o pedido inteiro, como no `POST`, sem `externalId` e `customerId`, e com uma ressalva para o cupom: só envie `couponCode` se o cupom existir na Zoppy (veja abaixo).
 
 - Recalcula `total` com o `subtotal`, `discount` e `shipping` enviados. Sem `discount` ou `shipping`, grava total 0.
 - **`lineItems` ausente apaga todos os itens do pedido.** Reenvie os itens sempre.
 - `externalId` e `customerId` no corpo são ignorados: não mudam depois de criados.
-- Sem `couponCode`, `provider`, `storeId`/`store` ou vendedor, mantém o que já estava. O `PUT` não remove cupom nem vendedor.
-- `couponCode` que não existe na conta responde `422 Coupon code not found` (o `POST` aceita qualquer código).
+- Sem `couponCode`, `provider`, `storeId`/`store` ou vendedor, mantém o que já estava. O `PUT` não remove vendedor; `couponCode: ""` apaga o cupom do pedido.
+- **`couponCode` que não existe na Zoppy responde `422 Coupon code not found` e nada é gravado**, mesmo que o `POST` do mesmo pedido tenha aceitado esse código (o `POST` aceita qualquer código). Cupom do seu sistema ou de outra plataforma: omita `couponCode` no `PUT`; ausente mantém o cupom gravado.
 
 **Confira o `PUT` lendo de volta.** Um `PUT` enviado poucos segundos depois do `POST` do mesmo pedido às vezes é desfeito: o processamento do `POST` regrava a versão anterior e o `GET` volta com os valores do `POST`, mesmo com o `PUT` tendo respondido 200. Depois do `PUT`, espere alguns segundos, faça `GET /orders/{id}` e, se o pedido não refletir o `PUT`, reenvie.
 
@@ -114,7 +114,7 @@ Para sincronizar sem duplicar: `GET /orders/external/{externalId}`; 404 → `POS
 - **`lineItems`**: `[{ "productId": "<id da Zoppy>", "quantity": 2 }]`. `productId` inexistente ou com o `externalId` do produto é descartado sem erro. `quantity` é obrigatório, número, mínimo 0, e é gravado inteiro (1.5 vira 2). Não há preço por item: a resposta traz o preço do cadastro do produto. Itens em outro campo (`items`) são ignorados.
 - **`couponCode`**: código do cupom usado. Se o cupom existir na conta, a resposta traz `couponUsed` e, segundos depois, o cupom passa a constar como usado. Com cupom existente e `discount: 0`, a Zoppy preenche o `discount` com o valor do cupom e o `subtotal` lido de volta aumenta: envie o desconto real.
 - **Vendedor**: `userId` (id de um usuário da conta) ou `seller` com `email`, `revenueRecord` ou `phone`. O `userId` tem prioridade; se não achar, tenta o `seller`; se nada casar, o pedido fica sem vendedor, sem erro. Prefira `email` ou `userId`: a busca por `phone` pode não achar o vendedor dependendo de como o telefone dele foi cadastrado.
-- **Loja**: `storeId` (id da Zoppy) precisa existir e estar ativa, senão 422. O objeto `store` procura uma loja ativa por `name` ou `externalId` e nunca cria loja; sem correspondência, e sem loja informada, o pedido vai para a loja padrão "Integrador Externo". `storeId` tem prioridade sobre `store`.
+- **Loja**: `storeId` (id da Zoppy) precisa existir e estar ativa, senão 422. O objeto `store` procura uma loja ativa por `name` ou `externalId` e não cria a loja informada; sem correspondência, e sem loja informada, o pedido vai para a loja padrão "Integrador Externo". `storeId` tem prioridade sobre `store`.
 - **`provider`**: texto livre, gravado e devolvido como veio.
 - **`createCoupon`** e **`orderFromZoppy`**: aceitos (booleanos), mas não alteram o pedido gravado nem criam cupom.
 

@@ -19,6 +19,7 @@
 7. Não envia `externalId` nem `customerId` esperando mudá-los no PUT.
 8. Valida com `pedido.create` antes do POST e `pedido.update` antes do PUT.
 9. Depois do PUT, lê o pedido de volta (`GET /orders/{id}`) e reenvia se ele não refletir o PUT.
+10. No PUT, não reenvia `couponCode` de cupom que não foi criado na Zoppy (cupom do sistema do lojista): omite o campo, senão `422 Coupon code not found`; nunca manda `couponCode: ""` para "manter".
 
 ## Erros que reprovam
 

@@ -6,7 +6,8 @@
 mínimo, válido até 31/12/2026 às 23:59 (horário de Brasília). O cliente tem telefone
 (11) 98765-4321 e já está na Zoppy. Escreva em Node a função que registra esse cupom na Zoppy
 com o código VOLTA30 e o nosso ID cupom-8812. O cupom só pode ser baixado quando o cliente digitar
-o código."
+o código. Também quero uma função que marca o cupom como usado na Zoppy quando ele é resgatado
+no nosso PDV."
 
 ## Critérios de acerto
 
@@ -21,3 +22,6 @@ o código."
 - Trata 422 lendo `message` (por exemplo `O código do coupon já está sendo utilizado`).
 - Roda `node scripts/validate.mjs --schema=cupom.create` no corpo antes de enviar, sem erro e sem
   aviso de `minPurchaseValue` ou `awaitingOrder`.
+- A função de baixa usa `PUT /coupons/code/VOLTA30` (ou por `id`) com
+  `{"used": true, "awaitingOrder": false}`, e não só `{"used": true}` (que deixa o cupom ser
+  aplicado de novo a um pedido sem código).

@@ -17,3 +17,6 @@
 5. Sugere guardar o mapa código -> id da Zoppy para não buscar a cada pedido.
 6. Para valores, datas e status do pedido, remete à skill zoppy-partners-pedidos em vez de inventar
    regra.
+7. Ao ler o pedido de volta, identifica os itens por `lineItems[].productId` e não por
+   `lineItems[].product.id`, ou lembra que todo produto precisa de `externalId` único para o
+   `lineItems[].product` vir certo.

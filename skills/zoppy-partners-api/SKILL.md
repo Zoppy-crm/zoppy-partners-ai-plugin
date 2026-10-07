@@ -6,8 +6,8 @@ description: "Visão geral da Partners API da Zoppy e ponto de partida de qualqu
 # Partners API da Zoppy: visão geral e roteamento
 
 Esta skill cobre o que vale para todos os recursos. Os campos de cada recurso ficam nas skills
-de recurso (tabela de roteamento no fim). Esta skill não tem payload próprio e por isso não tem
-schema: para validar um corpo de requisição, use o validador da skill do recurso.
+de recurso (tabela de roteamento no fim). Esta skill não tem payload próprio e por isso não traz
+schema nem validador: para validar um corpo de requisição, use o validador da skill do recurso.
 
 ## Antes de gerar código
 
@@ -72,7 +72,8 @@ Regras práticas:
 - Número mandado como texto é recusado: `"subtotal": "100.00"` dá
   `400 ["subtotal must be a number conforming to the specified constraints"]`. Mande `100.0`.
 - Respostas de sucesso de `GET`, `POST`, `PUT` e `DELETE` vêm com status 200 (não 201).
-- `DELETE` bem-sucedido responde `{"result":true}`.
+- `DELETE` bem-sucedido responde `{"result":true}`, exceto `DELETE /users/{id}`, que responde
+  200 com corpo vazio. Não faça `JSON.parse` de corpo vazio.
 
 ## Datas
 
@@ -90,15 +91,16 @@ Corpo de requisição (ex. `createdAt` de pedido), valor gravado e devolvido:
 | `05/09/2026 10:26` | `2026-05-09T13:26:00.000Z` | lido como mês/dia: vira 9 de maio |
 | `ontem` | não grava | `400 ["createdAt must be a Date instance"]` |
 
-Filtros de listagem (`after`, `updatedAt` na query):
+Filtros de listagem (`after` e `updatedAt` na query). Só data é lida diferente nos dois:
 
-| Você manda em `after` | A API filtra a partir de |
-|---|---|
-| `2026-09-05T00:00:00Z` | 05/09 00:00 UTC |
-| `2026-09-05T00:00:00` (sem fuso) | 05/09 00:00 de Brasília (03:00 UTC) |
-| `2026-09-05` (só data) | 05/09 00:00 de Brasília (03:00 UTC), diferente do corpo |
-| `08/10/2026` | 10 de agosto (mês/dia) |
-| `1759859098000` (epoch) | não filtra: `422 Invalid after date` |
+| Você manda | Em `after`, filtra a partir de | Em `updatedAt`, filtra a partir de |
+|---|---|---|
+| `2026-09-05T00:00:00Z` | 05/09 00:00 UTC | 05/09 00:00 UTC |
+| `2026-09-05T00:00:00` (sem fuso) | 05/09 00:00 de Brasília (03:00 UTC) | 05/09 00:00 de Brasília (03:00 UTC) |
+| `2026-09-05` (só data) | 05/09 00:00 de Brasília (03:00 UTC) | 05/09 00:00 UTC |
+
+Em `after`, `08/10/2026` é lido como mês/dia (10 de agosto) e epoch (`1759859098000`) dá
+`422 Invalid after date`.
 
 Detalhe e provas em [references/paginacao-e-datas.md](references/paginacao-e-datas.md).
 
@@ -110,8 +112,8 @@ Todas as listagens (`GET /customers`, `/products`, `/orders`, `/abandoned-carts`
 | Parâmetro | Obrigatório | Regra | Erro (422) quando falha |
 |---|---|---|---|
 | `after` | sim | data; traz registros com data de criação maior ou igual | `Invalid after date` (ausente ou inválida) |
-| `page` | sim | número, começa em 1 | `Page parameter is required`, `Page needs to be bigger than 0` |
-| `pageSize` | sim | 1 a 50 | `Page size parameter is required`, `Page size needs to be bigger than 0`, `Page size needs to be less than or equal 50` |
+| `page` | sim | número inteiro, começa em 1 | `Page parameter is required`, `Page needs to be bigger than 0` |
+| `pageSize` | sim | número inteiro de 1 a 50 (decimal, ex. `2.5`, dá 500) | `Page size parameter is required`, `Page size needs to be bigger than 0`, `Page size needs to be less than or equal 50` |
 | `updatedAt` | não | data; traz só registros atualizados a partir dela | `Invalid updatedAt date` |
 
 Por que `GET /products` sem `after` responde 422: `after` é obrigatório em toda listagem e é
@@ -147,12 +149,16 @@ de textos em erros de validação de campo.
 | 400 | campo com tipo errado, obrigatório ausente, JSON malformado | `{"message":["phone must be a string","firstName must be a string"],"error":"Bad Request","statusCode":400}` |
 | 401 | sem `Authorization` ou token desconhecido | `{"message":"External token not found","error":"Unauthorized","statusCode":401}` |
 | 403 | sem `zoppy-access` ou chave errada | página HTML `Just a moment...` |
-| 404 | rota inexistente; pedido, produto, carrinho ou loja inexistente | `{"message":"Order not found","error":"Not Found","statusCode":404}` |
-| 422 | regra de negócio: paginação inválida, `externalId` repetido em pedido ou carrinho, cliente não encontrado | `{"message":"External id already exists","error":"Unprocessable Entity","statusCode":422}` |
+| 404 | rota inexistente; registro inexistente (ver nota abaixo) | `{"message":"Order not found","error":"Not Found","statusCode":404}` |
+| 422 | regra de negócio: paginação inválida, `externalId` repetido em pedido ou carrinho, cliente não encontrado nas buscas | `{"message":"External id already exists","error":"Unprocessable Entity","statusCode":422}` |
 | 500 | falha não tratada | `{"statusCode":500,"message":"Internal server error"}` |
 
-- Cliente inexistente responde 422 (`Customer not found`), não 404, em `GET /customers/{id}` e
-  `GET /customers/external/{externalId}`. Trate 404 e 422 como "não encontrado" ao buscar.
+- O status de "não encontrado" muda com o recurso e o verbo. Pedido, produto, carrinho e loja: 404.
+  Cliente: 422 nas buscas (`GET /customers/{id}`, `/external/{externalId}`, `/phone/{telefone}`)
+  e 404 em `PUT` e `DELETE`. Vendedor: 404 em `GET /users/{id}`, 422 em
+  `GET /users/email/{email}` e 400 em `DELETE /users/{id}`. Trate 400, 404 e 422 com
+  "not found"/"não encontrado" na mensagem como "não encontrado". Tabela completa em
+  [references/erros.md](references/erros.md).
 - Quando a regra tem mais de um problema, as mensagens vêm juntas no mesmo texto, separadas
   por vírgula (ex. `"User email already in use., Password does not attend security standarts."`).
 - 40 requisições paralelas foram atendidas sem 429. A API não publica limite de taxa; se receber
@@ -178,12 +184,15 @@ Catálogo completo com corpos reais em [references/erros.md](references/erros.md
 
 Cada recurso reage diferente ao reenvio. Detalhes na skill de cada um.
 
+Sem `externalId`, cada `POST` de loja, pedido ou carrinho cria um registro novo: mande sempre
+`externalId` nesses três.
+
 | Recurso | Chave que a API usa no `POST` | Reenvio |
 |---|---|---|
 | Loja | `externalId` | atualiza o nome e devolve a mesma loja (mesmo `id`) |
 | Vendedor | `email` | `422 User email already in use.` |
-| Cliente | telefone, não o `externalId` | mesmo telefone devolve o cliente existente sem alterar nada; mesmo `externalId` com outro telefone cria outro cliente. Veja zoppy-partners-clientes |
-| Produto | `name`, não o `externalId` | mesmo nome devolve o produto existente sem alterar preço nem `externalId`. Veja zoppy-partners-produtos |
+| Cliente | telefone, não o `externalId` | mesmo telefone devolve o cliente existente sem alterar os dados cadastrais; mesmo `externalId` com outro telefone cria outro cliente. Veja zoppy-partners-clientes |
+| Produto | `name` (mais `provider`, quando enviado), não o `externalId` | mesmo nome e mesmo `provider` devolvem o produto existente sem alterar preço nem `externalId`; nome igual com outro `provider` cria outro produto. Veja zoppy-partners-produtos |
 | Pedido | `externalId` | `422 External id already exists`. Como alterar um pedido: veja zoppy-partners-pedidos |
 | Carrinho | `externalId` | `422 External id already exists`. Veja zoppy-partners-carrinho-abandonado |
 

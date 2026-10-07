@@ -36,15 +36,24 @@ function expectEqual(label, actual, expected) {
 // Upsert recomendado:
 // 1. GET /customers/external/{externalId}. Achou: PUT /customers/{id}.
 // 2. Não achou (422): POST /customers.
-// 3. Se o POST devolver outro externalId, o telefone já era de um cliente existente e o POST
-//    não gravou nada do que você mandou. Faça PUT nesse id para atualizar e ligar o seu externalId.
+// 3. Se o POST devolver outro externalId ou outro endereço, o telefone já era de um cadastro
+//    existente e o POST não gravou o que você mandou. Faça PUT nesse id para atualizar e ligar o seu externalId.
+//    Atenção: esse PUT substitui o externalId do cadastro antigo.
+const digits = (value) => String(value ?? '').replace(/\D/g, '');
+
+function sameAddress(saved, sent) {
+    if (!saved) return false;
+    const textEqual = ['address1', 'city', 'state'].every((field) => (saved[field] ?? '') === (sent[field] ?? ''));
+    return textEqual && digits(saved.postcode) === digits(sent.postcode);
+}
+
 async function upsertCustomer(payload) {
     const existing = await request('GET', `/customers/external/${encodeURIComponent(payload.externalId)}`);
     if (existing.status === 200) return zoppy('PUT', `/customers/${existing.data.id}`, payload);
     if (existing.status !== 422) throw new Error(`busca por externalId respondeu ${existing.status}: ${existing.text}`);
 
     const created = await zoppy('POST', '/customers', payload);
-    if (created.externalId === payload.externalId) return created;
+    if (created.externalId === payload.externalId && sameAddress(created.address, payload.address)) return created;
     return zoppy('PUT', `/customers/${created.id}`, payload);
 }
 
@@ -78,6 +87,15 @@ try {
     const linked = await zoppy('GET', `/customers/external/${encodeURIComponent(`${runId}-novo`)}`);
     expectEqual('upsert usa o cliente existente', linked.id, original.id);
     expectEqual('upsert atualiza o nome', linked.lastName, 'Novo');
+    const oldLink = await request('GET', `/customers/external/${encodeURIComponent(`${runId}-antigo`)}`);
+    expectEqual('externalId antigo substituído', oldLink.status, 422);
+
+    // Upsert com endereço diferente e mesmo externalId cai no PUT e grava o endereço.
+    const movedAddress = { address1: 'Rua D, 40', city: 'Londrina', state: 'PR', postcode: '86010-000' };
+    await upsertCustomer({ externalId: `${runId}-novo`, phone, firstName: 'Nome', lastName: 'Novo', address: movedAddress });
+    const moved = await zoppy('GET', `/customers/${original.id}`);
+    expectEqual('upsert grava o endereço', moved.address.city, 'Londrina');
+    expectEqual('upsert grava o CEP', moved.address.postcode, '86010000');
 
     // Segunda chamada do upsert com o mesmo externalId cai no PUT, sem criar outro cliente.
     await upsertCustomer({ externalId: `${runId}-novo`, phone, firstName: 'Nome', lastName: 'Novo Dois', address });

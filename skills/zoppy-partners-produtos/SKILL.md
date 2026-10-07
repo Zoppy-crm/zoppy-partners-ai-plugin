@@ -23,10 +23,10 @@ description: Cadastra e mantém produtos na Partners API da Zoppy (POST, GET, PU
 
 | Método e rota | Faz | Sucesso | Erros comuns |
 |---|---|---|---|
-| `POST /products` | Cria. Se já existe produto com o mesmo `name` (e `provider`), devolve o existente sem alterar | 200, produto | 400, 422 |
+| `POST /products` | Cria. Se já existe produto com o mesmo `name` (e `provider`), devolve o existente (veja a regra 2) | 200, produto | 400, 422 |
 | `GET /products/{id}` | Busca pelo id da Zoppy (UUID) | 200, produto | 404 |
 | `GET /products/external/{externalId}` | Busca pelo seu id | 200, produto | 404 |
-| `GET /products/name/{name}` | Busca pelo nome (sem diferenciar maiúsculas) | 200, produto | 404 |
+| `GET /products/name/{name}` | Busca pelo nome (sem diferenciar maiúsculas nem acentos) | 200, produto | 404 |
 | `GET /products?after=&page=&pageSize=&updatedAt=` | Lista paginada, criados a partir de `after` | 200, `{pagination, data}` | 422 |
 | `PUT /products/{id}` | Atualiza com o corpo completo (veja a regra 3) | 200, produto | 400, 404, 422 |
 | `DELETE /products/{id}` | Exclui | 200, `{"result":true}` | 404 |
@@ -41,10 +41,10 @@ description: Cadastra e mantém produtos na Partners API da Zoppy (POST, GET, PU
 |---|---|---|---|
 | `name` | string | sim | Não vazio. Gravado com até 255 caracteres (o resto é cortado). É a chave de deduplicação do POST |
 | `status` | string | sim | `publish`, `draft` ou `inactive`, em minúsculas. Ausente ou outro valor: 422 `Invalid status` |
-| `price` | number | sim | Número JSON maior ou igual a 0. String (`"89.90"`): 400. Gravado com 6 dígitos significativos |
+| `price` | number | sim | Número JSON maior ou igual a 0. String (`"89.90"`): 400. Gravado como float de 32 bits (veja a regra 4) |
 | `externalId` | string ou null | não | Seu id. Não deduplica |
-| `specification` | string ou null | não | `m` ou `f`, em minúsculas. Outro valor: 422 `Invalid specification` |
-| `categories` | string[] | não | Nomes de categoria, sem item vazio |
+| `specification` | string ou null | não | Mande `m` ou `f` (minúsculas) ou omita. Outro texto não vazio, inclusive `M`: 422 `Invalid specification`. `""`, `false` e `0` passam sem erro (veja a regra 3) |
+| `categories` | string[] | não | Nomes de categoria, sem item vazio. Use sempre a mesma grafia: `verao` e `VERAO` viram duas categorias |
 | `provider` | string | não | Letras, números, `-` e `_`, até 50 caracteres. Gravado em minúsculas |
 
 **A API de produtos não tem** SKU, estoque, preço promocional, imagem, URL, variações nem produto pai.
@@ -65,20 +65,28 @@ deduplica por nome).
 ```
 
 Item com `productId` de produto inexistente ou excluído também é descartado com 200. Confira na
-resposta do pedido que `lineItems` tem a quantidade de itens que você mandou. Na leitura do pedido,
-`lineItems[].product.price` é o preço **atual** do produto, não o preço da venda. Se o produto for
-excluído depois, o item deixa de aparecer na leitura do pedido. Detalhes em
+resposta do pedido que `lineItems` tem a quantidade de itens que você mandou.
+
+Na leitura do pedido (`GET /orders/{id}`), identifique o item por `lineItems[].productId`. O objeto
+`lineItems[].product` é montado na hora da leitura e casa o produto pelo id **ou** pelo `externalId`:
+se dois produtos do pedido estão sem `externalId`, ou têm o mesmo `externalId`, um item pode mostrar o
+produto do outro. Por isso, mande `externalId` único em todo produto. Com `externalId` único,
+`lineItems[].product.price` é o preço **atual** do produto (não o da venda) e, se o produto for
+excluído depois, o item deixa de aparecer na leitura. Detalhes em
 [references/vinculo-com-pedido.md](references/vinculo-com-pedido.md).
 
 ### 2. POST deduplica por `name`, não por `externalId`
 
-- Mesmo `name` (sem diferenciar maiúsculas) e mesmo `provider`, ou mesmo `name` sem `provider` no corpo:
-  o POST devolve o produto que já existe, com o id dele, e **ignora** `price`, `status`,
-  `specification` e `externalId` enviados. O `categories` devolvido no POST e no GET continua o antigo.
-  Para mudar qualquer um deles, use PUT.
+- Mesmo `name` (sem diferenciar maiúsculas nem acentos: `Pão` e `PAO` são o mesmo) e mesmo
+  `provider`, ou mesmo `name` sem `provider` no corpo: o POST devolve o produto que já existe, com o id
+  e o `externalId` dele, e **ignora** `price`, `status`, `specification` e `externalId` enviados.
+- Nesse reenvio, as categorias que a Zoppy usa internamente são trocadas pela lista enviada (reenvio
+  sem `categories` apaga todas), mas o `categories` devolvido no POST e no GET continua o antigo. Reenvie
+  sempre com a lista completa, ou use PUT, que atualiza as duas coisas.
 - Mesmo `externalId` com `name` diferente: cria **outro** produto.
 - Mesmo `name` com `provider` diferente: cria outro produto com o mesmo nome. Enquanto os dois
-  existirem, o `PUT` que mantém esse nome falha com 422 `Product name is already being used`.
+  existirem, o `PUT` que mantém esse nome falha com 422 `Product name is already being used`, e
+  `GET /products/name/{name}` (assim como o POST sem `provider`) devolve só um deles.
 - `name` com espaço sobrando no início ou no fim, ou com mais de 255 caracteres, não casa com o já
   gravado e gera duplicata.
 
@@ -87,6 +95,8 @@ Reenvio seguro (upsert):
 ```text
 GET /products/external/{externalId}
   404 -> POST /products
+         se o externalId da resposta for diferente do seu, o nome colidiu com outro produto:
+         não guarde esse id; torne o nome único (ou atualize aquele produto com PUT, se for o mesmo item)
   200 -> PUT  /products/{id da resposta} com o corpo completo
 ```
 
@@ -95,8 +105,10 @@ GET /products/external/{externalId}
 - `name`, `status` e `price` são obrigatórios também no PUT.
 - `categories` substitui a lista inteira. PUT sem `categories` (ou com `null` ou `[]`) deixa o produto
   sem categorias.
-- `externalId` ausente mantém o valor gravado; `null` apaga. `specification` e `provider` ausentes ou
-  `null` mantêm o valor gravado (não dá para limpá-los pelo PUT).
+- `externalId` ausente mantém o valor gravado; `null` apaga. `provider` ausente ou `null` mantém o
+  valor gravado (não dá para limpá-lo pelo PUT).
+- `specification` ausente ou `null` mantém o valor gravado. Para limpar, mande `""` (grava vazio).
+  Não mande `false` nem `0`: passam sem erro e gravam o texto `"false"` ou `"0"`.
 - A resposta do PUT ecoa o corpo enviado: campo omitido some da resposta e `updatedAt` pode vir com o
   valor anterior. Para conferir o que ficou gravado, faça `GET /products/{id}`.
 
@@ -107,8 +119,11 @@ GET /products/external/{externalId}
 "price": 89.9       // CERTO
 ```
 
-O preço é gravado com 6 dígitos significativos: `9999.99` e `1999.95` voltam iguais, mas `12345.67` volta
-`12345.7` e `99999.99` volta `100000`. A resposta do POST ecoa o valor enviado; o GET mostra o gravado.
+O preço é convertido para float de 32 bits e lido com 6 dígitos significativos: `9999.99` e `1999.95`
+voltam iguais, mas `12345.65` e `12345.67` voltam `12345.7`, `99999.99` volta `100000` e `1234.565` volta
+`1234.56`. O arredondamento não é o escolar; o validador da skill calcula o valor que será gravado.
+Acima de 3.4e38 a API responde 200 e grava `3.40282e+38`. A resposta do POST ecoa o valor enviado; o
+GET mostra o gravado.
 
 ### 5. Excluir
 

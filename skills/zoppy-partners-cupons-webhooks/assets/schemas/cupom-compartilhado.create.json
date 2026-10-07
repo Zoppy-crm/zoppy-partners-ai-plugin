@@ -3,7 +3,7 @@
   "description": "Corpo de POST /coupons/shared (cupom compartilhado, sem cliente, com limite de uso).",
   "required": ["code", "amount"],
   "properties": {
-    "externalId": { "type": ["number", "string"], "description": "ID do cupom no seu sistema. Obrigatório (ver regras). Gravado como inteiro de 0 a 2147483647." },
+    "externalId": { "type": ["number", "string"], "description": "ID do cupom no seu sistema. Obrigatório (ver regras). Inteiro de 1 a 2147483647." },
     "code": { "type": "string", "minLength": 1, "description": "Código do cupom, único na conta entre individuais e compartilhados." },
     "amount": { "type": ["number", "string"], "description": "Valor do desconto. Gravado como inteiro (arredondado)." },
     "type": { "type": "string", "enum": ["percent", "fixed_cart"], "description": "Padrão fixed_cart." },

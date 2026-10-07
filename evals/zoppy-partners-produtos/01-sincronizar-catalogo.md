@@ -23,3 +23,7 @@
 7. Roda `node scripts/validate.mjs --schema=produto.create` / `produto.update` no payload, ou descreve
    esse passo antes do envio.
 8. Lê de volta (`GET /products/{id}`) ao menos em modo de verificação e compara `price` e `categories`.
+9. Depois de um POST, compara o `externalId` da resposta com o `sku` enviado: se vier outro, trata como
+   colisão de nome (a deduplicação ignora maiúsculas e acentos) e não grava aquele id como se fosse do
+   seu produto.
+10. Usa a mesma grafia de categoria em todos os produtos (não mistura `Verao` e `VERAO`).

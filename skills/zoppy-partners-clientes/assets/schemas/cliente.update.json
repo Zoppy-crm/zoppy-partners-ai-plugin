@@ -10,10 +10,10 @@
     "properties": {
         "externalId": {
             "type": "string",
-            "description": "ID do cliente no seu sistema. Se vier, substitui o atual; se faltar, mantém."
+            "description": "ID do cliente no seu sistema. Se vier, substitui o atual; se faltar, mantém; texto vazio desfaz o vínculo."
         },
         "email": {
-            "description": "E-mail. Se faltar ou vier null, mantém o atual. A API não valida formato."
+            "description": "E-mail. Se faltar ou vier null, mantém; texto vazio apaga. A API não valida formato."
         },
         "phone": {
             "type": "string",
@@ -33,42 +33,42 @@
                 "number",
                 "null"
             ],
-            "description": "Data de nascimento: YYYY-MM-DD ou ISO 8601. Se faltar ou vier null, mantém."
+            "description": "Data de nascimento: YYYY-MM-DD ou ISO 8601. Se faltar ou vier null, mantém; não pode ser apagada."
         },
         "gender": {
             "type": [
                 "string",
                 "null"
             ],
-            "description": "Gênero, m ou f. Se faltar, mantém; texto vazio apaga."
+            "description": "Gênero, m ou f. Se faltar ou vier null, mantém; texto vazio apaga."
         },
         "address": {
             "type": "object",
-            "description": "Endereço. Obrigatório no PUT: sem ele a API responde 500.",
+            "description": "Endereço. Obrigatório no PUT (sem ele a API responde 500). Campo omitido mantém o valor atual; null apaga address1, city, state e postcode.",
             "properties": {
                 "address1": {
-                    "description": "Rua e número."
+                    "description": "Rua e número. Omitido mantém; null apaga."
                 },
                 "address2": {
-                    "description": "Complemento."
+                    "description": "Complemento. Omitido ou null mantém; texto vazio apaga."
                 },
                 "city": {
-                    "description": "Cidade."
+                    "description": "Cidade. Omitido mantém; null apaga."
                 },
                 "state": {
-                    "description": "UF."
+                    "description": "UF. Omitido mantém; null apaga."
                 },
                 "postcode": {
-                    "description": "CEP, com ou sem hífen. A resposta devolve só os dígitos."
+                    "description": "CEP, com ou sem hífen. A resposta devolve só os dígitos. Omitido mantém; null apaga."
                 },
                 "country": {
                     "description": "País."
                 },
                 "latitude": {
-                    "description": "Latitude. Gravada no PUT; se faltar, mantém."
+                    "description": "Latitude. Gravada no PUT; omitida ou null mantém; valor que não é número vira 0."
                 },
                 "longitude": {
-                    "description": "Longitude. Gravada no PUT; se faltar, mantém."
+                    "description": "Longitude. Gravada no PUT; omitida ou null mantém; valor que não é número vira 0."
                 }
             }
         },

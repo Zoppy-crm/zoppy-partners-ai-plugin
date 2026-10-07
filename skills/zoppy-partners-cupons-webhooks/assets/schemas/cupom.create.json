@@ -6,7 +6,7 @@
     "externalId": { "type": ["string", "number"], "description": "ID do cupom no seu sistema. Obrigatório (ver regras). Texto livre, até 255 caracteres." },
     "code": { "type": "string", "minLength": 1, "description": "Código do cupom, único na conta entre individuais e compartilhados." },
     "amount": { "type": ["number", "string"], "description": "Valor do desconto. Diferente de zero." },
-    "phone": { "type": "string", "minLength": 1, "description": "Telefone do cliente, com pelo menos 10 dígitos. Gravado exatamente como enviado." },
+    "phone": { "type": ["string", "number"], "minLength": 1, "description": "Telefone do cliente, com pelo menos 10 dígitos. Gravado exatamente como enviado." },
     "type": { "type": "string", "enum": ["percent", "fixed_cart"], "description": "Padrão fixed_cart." },
     "expiryDate": { "type": "string", "format": "date-time", "description": "Validade. Padrão 2100-01-01T00:00:00Z." },
     "minPurchaseValue": { "type": ["number", "string"], "minimum": 0, "description": "Valor mínimo de compra. Padrão: 0 em percent, o próprio amount em fixed_cart." },

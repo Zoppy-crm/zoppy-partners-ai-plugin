@@ -62,6 +62,8 @@ Na resposta do `POST`, campos que você não mandou podem vir ausentes em vez de
 | `"address": {"postcode": "01001-000"}` | resposta `"01001000"` |
 | `"address": {"address1": 123, "city": true}` | `"123"` e `"1"` |
 | `"address": {"latitude": -23.55}` no `POST` | `null` (ignorado) |
+| `"address": {"latitude": "abc"}` no `PUT` | `0` |
+| `"birthDate": "1990-02-30"` | `"1990-03-02T00:00:00.000Z"` |
 | `"cpf": "..."`, `"optIn": false` | nada (ignorados) |
 
 ## Listagem
@@ -71,7 +73,7 @@ Na resposta do `POST`, campos que você não mandou podem vir ausentes em vez de
 | Parâmetro | Regra | Erro |
 |---|---|---|
 | `after` | Obrigatório; data de criação mínima | ausente ou inválido: 422 `Invalid after date` |
-| `page` | Obrigatório, a partir de 1 | `0`: 422 `Page needs to be bigger than 0` |
+| `page` | Obrigatório, a partir de 1 | ausente: 422 `Page parameter is required`; `0`: 422 `Page needs to be bigger than 0` |
 | `pageSize` | Obrigatório, de 1 a 50 | `51`: 422 `Page size needs to be less than or equal 50` |
 | `updatedAt` | Opcional; atualização mínima | |
 

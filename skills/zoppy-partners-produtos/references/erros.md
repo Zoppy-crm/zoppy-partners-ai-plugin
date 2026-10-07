@@ -17,13 +17,15 @@ com `message` em texto; `404` quando o produto não existe na conta (ou foi excl
 | `provider` com espaço ou vazio | 400 | `{"message":["Provider deve conter apenas letras, números, hífens e underscores (sem espaços)"],...}` |
 | `provider` com mais de 50 caracteres | 400 | `{"message":["Provider deve ter no máximo 50 caracteres"],...}` |
 | `status` ausente, maiúsculo ou fora da lista | 422 | `{"message":"Invalid status","error":"Unprocessable Entity","statusCode":422}` |
-| `specification` fora de `m`/`f` (inclui `M`) | 422 | `{"message":"Invalid specification",...}` |
+| `specification` texto não vazio fora de `m`/`f` (inclui `M`) | 422 | `{"message":"Invalid specification",...}` |
 | PUT com `name` usado por outro produto | 422 | `{"message":"Product name is already being used",...}` |
 | GET, PUT ou DELETE de id inexistente ou excluído | 404 | `{"message":"Product not found","error":"Not Found","statusCode":404}` |
 | GET por `externalId` ou nome sem produto | 404 | `{"message":"Product not found",...}` |
 | Listagem sem `after` ou com data inválida | 422 | `{"message":"Invalid after date",...}` |
 | Listagem sem `page` | 422 | `{"message":"Page parameter is required",...}` |
 | Listagem com `page=0` | 422 | `{"message":"Page needs to be bigger than 0",...}` |
+| Listagem sem `pageSize` | 422 | `{"message":"Page size parameter is required",...}` |
+| Listagem com `pageSize=0` | 422 | `{"message":"Page size needs to be bigger than 0",...}` |
 | Listagem com `pageSize` acima de 50 | 422 | `{"message":"Page size needs to be less than or equal 50",...}` |
 | Listagem com `updatedAt` inválido | 422 | `{"message":"Invalid updatedAt date",...}` |
 
@@ -33,9 +35,13 @@ Não são erro HTTP, mas quase sempre são bug na integração:
 
 | Situação | O que acontece |
 |---|---|
-| POST com `name` (e `provider`) de produto existente | Devolve o existente; preço, status, specification e externalId enviados são ignorados |
+| POST com `name` (e `provider`) de produto existente, sem diferenciar maiúsculas nem acentos | Devolve o existente, com o `externalId` dele; preço, status, specification e externalId enviados são ignorados; as categorias internas são trocadas pela lista enviada, mas a API segue mostrando as antigas |
 | POST com `externalId` existente e `name` novo | Cria outro produto |
 | POST com `name` de mais de 255 caracteres | Grava cortado; o próximo POST igual cria duplicata |
 | Campos `sku`, `stock`, `promotionalPrice`, `imageUrl`, `variations` e afins | Aceitos e descartados |
 | Pedido com `productId` igual ao `externalId`, inexistente ou de produto excluído | O pedido é criado e o item é descartado |
 | PUT sem `categories` | Produto fica sem categorias |
+| `specification` `false` ou `0` | Gravado como texto `"false"` ou `"0"` |
+| `price` acima de 3.4e38 | Gravado `3.40282e+38` |
+| Categoria com grafia diferente (`cat1`, `CAT1`) | Cria outra categoria na conta |
+| Dois produtos do mesmo pedido sem `externalId` ou com o mesmo `externalId` | Na leitura do pedido, um item pode mostrar o produto do outro |

@@ -45,14 +45,14 @@ Os mesmos campos, menos `externalId` e `customerId`, que são ignorados se viere
 | `createdAt` | Ausente: vira o `completedAt` enviado; sem os dois, mantém a data atual |
 | `completedAt` | Status `completed` sem `completedAt`: mantém o anterior. Outro status: `null` |
 | `lineItems` | Substitui todos os itens. Ausente: apaga todos |
-| `couponCode` | Precisa existir na conta, senão 422 `Coupon code not found`. Ausente: mantém |
+| `couponCode` | Precisa existir na Zoppy, senão 422 `Coupon code not found` e nada é gravado, mesmo que o POST tenha aceitado o código. Ausente: mantém. `""`: apaga o cupom do pedido |
 | `storeId`, `store` | Ausentes: mantém a loja |
 | `userId`, `seller` | Ausentes ou sem correspondência: mantém o vendedor |
 | `provider` | Ausente: mantém |
 
 ## Objetos store e seller
 
-`store`: `{ "name": "Loja Centro", "externalId": "loja-001" }`. A API procura uma loja **ativa** da conta com esse `name` **ou** esse `externalId`. Achou: usa. Não achou: usa a loja padrão "Integrador Externo". Nunca cria loja e não recusa o pedido. Os dois campos são opcionais. Se vier `storeId` junto, vale o `storeId`.
+`store`: `{ "name": "Loja Centro", "externalId": "loja-001" }`. A API procura uma loja **ativa** da conta com esse `name` **ou** esse `externalId`. Achou: usa. Não achou: usa a loja padrão "Integrador Externo". Não cria a loja informada e não recusa o pedido. Os dois campos são opcionais. Se vier `storeId` junto, vale o `storeId`.
 
 `seller`: `{ "email": "...", "revenueRecord": "...", "phone": "..." }`. A API procura um usuário da conta que tenha esse e-mail **ou** esse `revenueRecord` **ou** esse telefone. Se `userId` vier e existir, ele vale e o `seller` é ignorado. A busca por `phone` não acha o vendedor cujo telefone está cadastrado com `+55`; prefira `email`.
 
@@ -93,7 +93,7 @@ POST, PUT e GET devolvem o mesmo formato:
 | `provider` | Como enviado |
 | `lineItems` | Itens com `productId`, `quantity` e o `product` (nome, preço do cadastro, status) |
 
-Na resposta do POST e do PUT, campos não enviados (`couponCode`, `userId`) podem faltar e o `total` pode vir com casas longas (`124.01999999999998`). Leia de volta com `GET /orders/{id}` para conferir.
+Na resposta do POST e do PUT, campos não enviados (`couponCode`, `userId`) podem faltar, o `total` pode vir com casas longas (`124.01999999999998`) e, sem `discount` ou `shipping`, `total` e `subtotal` vêm `null` (o GET traz `total` 0). Leia de volta com `GET /orders/{id}` para conferir.
 
 ## Listagem
 

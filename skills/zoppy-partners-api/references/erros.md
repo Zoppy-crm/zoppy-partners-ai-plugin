@@ -31,6 +31,7 @@ Validação de campo (tipo errado, obrigatório ausente). `message` é uma lista
 | Número como texto (`"subtotal":"100.00"`) | `{"message":["subtotal must be a number conforming to the specified constraints"],"error":"Bad Request","statusCode":400}` |
 | Data que não é data (`"createdAt":"ontem"`) | `{"message":["createdAt must be a Date instance"],"error":"Bad Request","statusCode":400}` |
 | E-mail inválido em `POST /users` | `{"message":["email must be an email"],"error":"Bad Request","statusCode":400}` |
+| `DELETE /users/{id}` inexistente | `{"message":"Usuário não encontrado","error":"Bad Request","statusCode":400}` |
 
 Campo com nome errado (ex. `first_name`) não aparece no erro: ele é ignorado e o 400 aponta o
 campo certo que ficou faltando.
@@ -55,10 +56,13 @@ rota, inclusive a documentação, e também quando os dois headers faltam.
 | Causa | Corpo |
 |---|---|
 | Rota inexistente, ou com prefixo `/api` ou `/v1` | `{"message":"Cannot GET /rota-que-nao-existe","error":"Not Found","statusCode":404}` |
-| `GET /orders/{id}` ou `/orders/external/{externalId}` inexistente | `{"message":"Order not found","error":"Not Found","statusCode":404}` |
-| `GET /products/{id}` inexistente | `{"message":"Product not found","error":"Not Found","statusCode":404}` |
-| `GET /abandoned-carts/{id}` inexistente | `{"message":"Abandoned Cart not found","error":"Not Found","statusCode":404}` |
-| `GET /stores/{id}` inexistente | `{"message":"Store not found","error":"Not Found","statusCode":404}` |
+| `GET` ou `DELETE /orders/{id}`, `GET /orders/external/{externalId}` inexistente | `{"message":"Order not found","error":"Not Found","statusCode":404}` |
+| `PUT /orders/{id}` inexistente | `{"message":"Pedido não encontrado","error":"Not Found","statusCode":404}` |
+| `GET`, `PUT` ou `DELETE /products/{id}`, `GET /products/external/{x}`, `GET /products/name/{x}` inexistente | `{"message":"Product not found","error":"Not Found","statusCode":404}` |
+| `GET`, `PUT` ou `DELETE /abandoned-carts/{id}`, `GET /abandoned-carts/external/{x}` inexistente | `{"message":"Abandoned Cart not found","error":"Not Found","statusCode":404}` |
+| `GET`, `PUT` ou `DELETE /stores/{id}`, `GET /stores/external/{x}` inexistente | `{"message":"Store not found","error":"Not Found","statusCode":404}` |
+| `PUT` ou `DELETE /customers/{id}` inexistente | `{"message":"Customer not found","error":"Not Found","statusCode":404}` |
+| `GET /users/{id}` inexistente | `{"message":"Usuário não encontrado","error":"Not Found","statusCode":404}` |
 
 ## 422 Unprocessable Entity
 
@@ -74,7 +78,8 @@ vírgula.
 | `pageSize=0` | `{"message":"Page size needs to be bigger than 0",...}` |
 | `pageSize=51` | `{"message":"Page size needs to be less than or equal 50",...}` |
 | `updatedAt` inválido | `{"message":"Invalid updatedAt date",...}` |
-| `GET /customers/{id}` ou `/customers/external/{externalId}` inexistente | `{"message":"Customer not found","error":"Unprocessable Entity","statusCode":422}` |
+| `GET /customers/{id}`, `/customers/external/{externalId}` ou `/customers/phone/{telefone}` inexistente | `{"message":"Customer not found","error":"Unprocessable Entity","statusCode":422}` |
+| `GET /users/email/{email}` inexistente | `{"message":"Usuário não encontrado","error":"Unprocessable Entity","statusCode":422}` |
 | Pedido ou carrinho com `externalId` já usado | `{"message":"External id already exists","error":"Unprocessable Entity","statusCode":422}` |
 | Pedido ou carrinho com `customerId` inexistente | `{"message":"Customer not found","error":"Unprocessable Entity","statusCode":422}` |
 | Pedido com `storeId` inexistente | `{"message":"Store not found for this company (storeId: 00000000-0000-0000-0000-000000000000)",...}` |
@@ -84,7 +89,7 @@ vírgula.
 
 Falha não tratada. O corpo não diz a causa:
 `{"statusCode":500,"message":"Internal server error"}`. Exemplo observado:
-`PUT /abandoned-carts/{id}` sem o campo `url`. Confira o payload contra o schema da skill do
+`PUT /abandoned-carts/{id}` sem o campo `url`, e listagem com `pageSize` decimal (`pageSize=2.5`). Confira o payload contra o schema da skill do
 recurso antes de tentar de novo.
 
 ## 429

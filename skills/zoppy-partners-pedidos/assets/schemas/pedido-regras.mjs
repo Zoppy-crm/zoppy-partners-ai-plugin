@@ -42,8 +42,12 @@ function checkStatus(payload, mode) {
 
 function checkDates(payload, mode) {
     const issues = [];
-    if (payload.createdAt === undefined) {
-        const fallback = mode === 'create' ? 'o completedAt ou, sem ele, o momento do envio' : 'o completedAt, se ele vier (sem ele, a data atual fica)';
+    if (payload.createdAt === undefined && payload.completedAt !== undefined) {
+        const effect = mode === 'create' ? 'a data do pedido vira a do completedAt' : 'o PUT troca a data do pedido pela do completedAt';
+        issues.push(error('createdAt', `ausente com completedAt presente: ${effect} (data do pagamento, não da venda), e o pedido sai do período da venda no filtro after. Envie createdAt com a data da venda`));
+    }
+    if (payload.createdAt === undefined && payload.completedAt === undefined) {
+        const fallback = mode === 'create' ? 'o momento do envio' : 'a data atual (mantida)';
         issues.push(warning('createdAt', `ausente: a data do pedido (a que o filtro after da listagem usa) vira ${fallback}. Envie a data da venda`));
     }
     if (payload.completedAt !== undefined && payload.status !== 'completed') {
@@ -54,6 +58,12 @@ function checkDates(payload, mode) {
         issues.push(warning('completedAt', `ausente com status completed: ${effect}`));
     }
     return issues;
+}
+
+function checkCouponOnUpdate(payload, mode) {
+    if (mode !== 'update' || payload.couponCode === undefined) return [];
+    if (payload.couponCode === '') return [warning('couponCode', 'vazio: o PUT apaga o cupom gravado no pedido. Para manter o cupom, omita o campo')];
+    return [warning('couponCode', 'no PUT o cupom precisa existir na Zoppy, senão 422 Coupon code not found e nada é gravado (cupom do seu sistema ou giftback já excluído). Se não tiver certeza, omita o campo: ausente mantém o cupom gravado')];
 }
 
 function checkCoupon(payload) {
@@ -94,6 +104,7 @@ export function orderRules(payload, mode) {
         ...checkStatus(payload, mode),
         ...checkDates(payload, mode),
         ...checkCoupon(payload),
+        ...checkCouponOnUpdate(payload, mode),
         ...checkLineItems(payload, mode),
         ...checkIgnoredFields(payload, mode)
     ];

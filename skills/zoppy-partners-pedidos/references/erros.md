@@ -5,6 +5,7 @@
 - Formato do erro
 - Erros 400 (tipo e formato)
 - Erros 422 (regra de negócio)
+- Erro 500
 - Erros 404
 - Aceito com 200, mas gravado diferente
 
@@ -37,8 +38,14 @@
 | `customerId` inexistente, de cliente excluído ou com o `externalId` do cliente (POST) | `Customer not found` |
 | `storeId` que não existe na conta | `Store not found for this company (storeId: <id>)` |
 | `storeId` de loja inativa | `Store "<nome>" is inactive and cannot receive orders (storeId: <id>). Reactivate it in the Zoppy panel, under the integration that owns this store.` |
-| `couponCode` que não existe na conta (só no PUT) | `Coupon code not found` |
+| `couponCode` que não existe na Zoppy (só no PUT; vale também para o mesmo código aceito no POST, como cupom do seu sistema ou giftback já excluído). Nada é gravado | `Coupon code not found` |
 | PUT em pedido cujo cliente foi excluído | `Customer address not found` |
+
+## Erro 500
+
+| Situação | O que acontece |
+|---|---|
+| `lineItems` que não é lista (ex.: um objeto `{"productId":...}`) | 500 `{"statusCode":500,"message":"Internal server error"}`, **mas o pedido já foi criado, sem itens**. Reenviar com o mesmo `externalId` dá 422 `External id already exists`: confira com `GET /orders/external/{externalId}` e corrija com `PUT` |
 
 ## Erros 404
 
@@ -56,7 +63,7 @@ São os casos que mais causam dado errado, porque não dão erro:
 |---|---|
 | `subtotal` só com os itens e `shipping > 0` | Frete sai do total: itens 131,60, frete 20, desconto 7,58 gravam 104,02 em vez de 124,02 |
 | Frete grátis mandado como `shipping > 0` com desconto cobrindo tudo | Total negativo (ex.: `subtotal 50, discount 60, shipping 10` grava -20) |
-| `discount` ou `shipping` ausente | Total gravado 0 |
+| `discount` ou `shipping` ausente | Total gravado 0; a resposta do POST/PUT traz `total` e `subtotal` `null` |
 | `total` no corpo | Ignorado |
 | Sem `createdAt` | Data do pedido vira `completedAt` ou o momento do recebimento |
 | Data sem fuso | Lida no horário de Brasília |
@@ -71,6 +78,7 @@ São os casos que mais causam dado errado, porque não dão erro:
 | PUT sem `createdAt`, com `completedAt` | Data do pedido trocada pela do `completedAt` |
 | `couponCode` de cupom existente com `discount: 0` | Zoppy preenche `discount` com o valor do cupom; `subtotal` lido de volta aumenta |
 | `couponCode` inexistente no POST | Gravado como veio; `couponUsed` fica `null` |
+| `couponCode: ""` no PUT | Apaga o cupom do pedido |
 | `userId` inexistente ou `seller` sem correspondência | Pedido sem vendedor |
 | `store` sem correspondência | Pedido na loja padrão "Integrador Externo" |
 | Sem `externalId` | Cada POST cria um pedido novo |

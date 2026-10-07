@@ -49,7 +49,7 @@ O `POST` responde 200, não 201.
 | `url` | string | sim | Link de recuperação. Ausente ou `""`: 422 `Abandoned Cart URL is required.`. Espaços nas pontas são removidos |
 | `externalId` | string | não | Seu id do carrinho. Repetido: 422 `External id already exists` |
 | `lineItems` | lista | não | `[{ "productId": "<id Zoppy>", "quantity": 2 }]`. Precisa ser lista |
-| `createdAt` | data ISO 8601 | não | Data do abandono. Ausente: vira o momento do recebimento |
+| `createdAt` | data ISO 8601 com fuso | não | Data do abandono. Ausente: vira o momento do recebimento |
 | `updatedAt` | data | não | Ignorado: a API grava o momento do recebimento |
 
 Detalhe de cada campo, da resposta e da listagem em [references/campos.md](references/campos.md).
@@ -68,9 +68,13 @@ valor bruto com o frete dentro.
 ```
 
 - `subtotal` menor que `discount + shipping` é aceito e grava total negativo. O validador acusa.
+- `discount` negativo é aceito e grava total maior que o `subtotal`. O validador avisa.
 - Sem `discount` ou sem `shipping` a API responde 200 e grava total `0`. Sempre mande os dois.
+  Nesse caso a resposta do `POST`/`PUT` traz `total` e `subtotal` `null` (só o `GET` mostra o
+  `0`), e no `PUT` sem `discount` o desconto anterior continua gravado.
 
-Na leitura (resposta do `POST`, `PUT` e `GET`), os valores não voltam como foram enviados:
+Na leitura (resposta do `POST`, `PUT` e `GET`, com `discount` e `shipping` enviados), os valores
+não voltam como foram enviados:
 
 | Campo lido | Valor |
 |---|---|
@@ -86,20 +90,29 @@ Para conferir um envio, compare `total` e `discount`, não `subtotal` e `shippin
 1. **`lineItems.productId` é o id Zoppy do produto.** Item com `productId` inexistente ou com o
    `externalId` do produto é descartado sem erro: o carrinho volta com menos itens. Confira
    `lineItems.length` na resposta.
-2. **`quantity` não é validada.** Negativa, string ou ausente é gravada como veio
-   (`-3`, `"2"` vira `2`, ausente vira `null`).
-3. **500 no `POST` não quer dizer que nada foi gravado.** Com `lineItems` como objeto, ou com um
-   item sem `productId`, a API responde 500 mas o carrinho já fica gravado, sem os itens (no
-   segundo caso, sem esse item e sem os seguintes).
-   Reenviar com o mesmo `externalId` dá 422: busque pelo `externalId` e corrija com `PUT`.
-4. **`PUT` exige `url`.** Sem `url` o `PUT` responde 500 e nada muda.
+2. **`quantity` não é validada.** O `GET` mostra o que foi gravado: negativa fica negativa
+   (`-3`), `"2"` vira `2`, `"abc"` vira `0`, decimal é arredondado (`1.5` vira `2`), ausente vira
+   `null`. A resposta do `POST` repete o valor enviado; confira pelo `GET`.
+3. **500 não quer dizer que nada foi gravado.** Com `lineItems` que não é lista (objeto, texto,
+   número) ou com um item `null` ou sem `productId`, a API responde 500 depois de gravar:
+   - no `POST`, o carrinho fica criado só com os itens anteriores ao inválido, e segue para a
+     recuperação como qualquer outro. Reenviar com o mesmo `externalId` dá 422: busque pelo
+     `externalId` e corrija com `PUT`;
+   - no `PUT`, valores e `url` já foram trocados e os itens antigos apagados; ficam só os itens
+     anteriores ao inválido. Refaça o `PUT` com a lista certa.
+   `lineItems` `null` ou `""` é aceito como carrinho sem itens; item com `productId` `null` é
+   descartado sem erro.
+4. **`PUT` exige a chave `url`.** Sem ela o `PUT` responde 500 e nada muda. Com `url` `""` ou só
+   espaços o `PUT` responde 200 e apaga o link de recuperação.
 5. **`PUT` substitui os itens.** Os itens atuais são apagados e trocados pela lista enviada; sem
    `lineItems` o carrinho fica sem itens. Mande sempre a lista completa.
 6. **`PUT` não muda `externalId`, `customerId` nem `createdAt`.** Esses campos são ignorados no
-   `PUT` (sem erro). Para trocar o cliente, exclua e crie de novo.
-7. **Data sem fuso** (`"2026-09-05 10:26"`) é aceita e lida como horário de Brasília (vira
-   `2026-09-05T13:26:00.000Z`). Mande sempre com fuso: `2026-09-05T10:26:00-03:00`. Data
-   inválida (`"ontem"`): 400.
+   `PUT` sem erro, desde que válidos; `createdAt` ou `updatedAt` inválido dá 400 como no `POST`.
+   Para trocar o cliente, exclua e crie de novo.
+7. **Mande datas em ISO 8601 com fuso**: `2026-09-05T10:26:00-03:00`. Data e hora sem fuso
+   (`"2026-09-05 10:26"`) é lida como horário de Brasília (vira `2026-09-05T13:26:00.000Z`); só a
+   data (`"2026-09-05"`) vira meia-noite UTC (`2026-09-05T00:00:00.000Z`, 21h do dia anterior em
+   Brasília). Data inválida (`"ontem"`): 400. O validador da skill exige o formato com fuso.
 8. **Campos desconhecidos** são aceitos e ignorados, sem erro. Um erro de digitação
    (`lineitems`) passa em silêncio; o validador avisa.
 
@@ -114,12 +127,13 @@ Para conferir um envio, compare `total` e `discount`, não `subtotal` e `shippin
 
 ## Recuperação e pedidos
 
-- Cada `POST` e cada `PUT` bem-sucedido faz a Zoppy reavaliar o carrinho para os fluxos de
-  carrinho abandonado da conta, de forma assíncrona. Se alguma mensagem sai depende dos fluxos
-  configurados na conta; a resposta da API não informa isso.
-- A Zoppy **não inicia** a recuperação de um carrinho quando já existe pedido com o mesmo telefone
-  do cliente do carrinho, criado **depois** do `createdAt` do carrinho. Isso vale na criação e em
-  cada `PUT`.
+- `POST` e `PUT` bem-sucedidos pedem que a Zoppy reavalie o carrinho para os fluxos de carrinho
+  abandonado da conta, de forma assíncrona, **no máximo uma vez por carrinho a cada 60 s**: um
+  `PUT` feito menos de 60 s depois do envio anterior do mesmo carrinho não gera nova avaliação.
+  Se alguma mensagem sai depende dos fluxos configurados na conta; a resposta não informa isso.
+- A Zoppy **não inicia** a recuperação de um carrinho quando já existe pedido, de qualquer status,
+  com o mesmo telefone do cliente do carrinho e com `createdAt` (a data gravada do pedido, não a
+  hora do envio) **depois** do `createdAt` do carrinho. O teste é feito a cada avaliação.
 - Por isso o `createdAt` importa: mande a data real do abandono. Sem ele, a data é o momento do
   envio, e um pedido feito antes desse envio não barra a recuperação.
 - O carrinho **não é marcado como convertido**: não há campo de status ou conversão na resposta,
@@ -133,13 +147,13 @@ Detalhe e como foi observado em [references/recuperacao.md](references/recuperac
 |---|---|---|
 | `subtotal` ausente ou string | 400 | `{"message":["subtotal must be a number conforming to the specified constraints"],"error":"Bad Request","statusCode":400}` |
 | `customerId` ausente | 400 | `"customerId must be a string"` na lista `message` |
-| `createdAt` inválido | 400 | `"createdAt must be a Date instance"` |
+| `createdAt` ou `updatedAt` inválido (POST e PUT) | 400 | `"createdAt must be a Date instance"` |
 | `url` ausente ou vazia no POST | 422 | `{"message":"Abandoned Cart URL is required.","error":"Unprocessable Entity","statusCode":422}` |
 | cliente não existe | 422 | `"Customer not found"` |
 | `externalId` repetido | 422 | `"External id already exists"` |
 | várias regras ao mesmo tempo | 422 | mensagens juntas com `, ` |
 | id inexistente (GET, PUT, DELETE) | 404 | `{"message":"Abandoned Cart not found","error":"Not Found","statusCode":404}` |
-| `PUT` sem `url`; `POST` com `lineItems` objeto ou item sem `productId` | 500 | `{"statusCode":500,"message":"Internal server error"}` |
+| `PUT` sem `url` (nada muda); `lineItems` que não é lista, item `null` ou sem `productId` (já gravou, ver regra 3) | 500 | `{"statusCode":500,"message":"Internal server error"}` |
 
 Lista completa e casos de borda em [references/erros.md](references/erros.md).
 

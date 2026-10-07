@@ -9,6 +9,6 @@
 - Primeiro `GET /customers/external/cli-789` para obter o `id` da Zoppy; o `PUT` usa esse `id`, não o externalId.
 - `PUT /customers/{id}` com `phone`, `firstName` e `lastName` atuais (lidos do GET) e o `address` novo com `address1`, `city`, `state`, `postcode`, `latitude`, `longitude`.
 - Omite `email` e `birthDate` (ou manda `null`), sabendo que assim eles ficam como estão.
-- Não manda `gender: ""` (apagaria o gênero).
+- Não manda `gender: ""` nem `email: ""` (apagariam o valor) nem `null` em `address1`, `city`, `state` ou `postcode`.
 - Confere com `GET /customers/{id}` depois do `PUT`, sem confiar no `updatedAt` da resposta do `PUT`.
 - Avisa que o endereço novo aparece também nos pedidos desse cliente, porque o pedido usa o endereço do cliente.

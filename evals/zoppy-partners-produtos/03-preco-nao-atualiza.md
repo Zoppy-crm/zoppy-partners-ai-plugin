@@ -16,6 +16,7 @@
    completo (`name`, `status`, `price` e `categories`).
 4. Para o duplicado, indica excluir o produto sobrando com `DELETE /products/{id}` (avisando que, se ele
    já estiver em pedido, o item some da leitura do pedido) ou mantê-lo com `status: "inactive"`.
-5. Explica que o preço é gravado com 6 dígitos significativos (12345.67 vira 12345.7) e que a API não
-   tem como guardar o valor exato; não promete que mandar como string resolve (string dá 400).
+5. Explica que o preço é gravado como float de 32 bits e lido com 6 dígitos significativos (12345.67
+   vira 12345.7) e que a API não tem como guardar o valor exato; não promete que mandar como string
+   resolve (string dá 400).
 6. Confere o resultado com `GET /products/{id}` e não com a resposta do PUT.

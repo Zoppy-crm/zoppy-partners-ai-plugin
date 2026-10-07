@@ -5,26 +5,31 @@ de carrinho abandonado configurados na conta Zoppy; a Partners API não devolve 
 
 ## O que coloca o carrinho na recuperação
 
-- Todo `POST /abandoned-carts` e todo `PUT /abandoned-carts/:id` que responde 200 faz a Zoppy
-  reavaliar o carrinho para os fluxos de carrinho abandonado da conta. A avaliação é assíncrona,
-  depois da resposta.
-- Um `PUT` no mesmo carrinho dispara uma nova avaliação: atualizar o carrinho é a forma de pedir
-  que ele seja reavaliado.
+- Todo `POST /abandoned-carts` e todo `PUT /abandoned-carts/:id` que responde 200 pede que a
+  Zoppy reavalie o carrinho para os fluxos de carrinho abandonado da conta. A avaliação é
+  assíncrona, depois da resposta.
+- Há no máximo uma avaliação por carrinho a cada 60 s. Um `PUT` feito menos de 60 s depois do
+  envio anterior do mesmo carrinho não gera nova avaliação; um `PUT` depois disso gera.
+- O carrinho gravado por um `POST` que respondeu 500 (ver erros.md) também é avaliado.
 
 ## O que barra a recuperação
 
 A Zoppy não inicia a recuperação quando já existe um pedido:
 
 1. com o mesmo telefone do cliente do carrinho, e
-2. criado depois do `createdAt` do carrinho.
+2. com `createdAt` depois do `createdAt` do carrinho. Vale a data gravada do pedido (a que você
+   mandou no pedido), não a hora em que o pedido foi enviado.
 
-O teste é feito a cada avaliação (na criação e em cada `PUT`). Observado em teste:
+O status do pedido não importa: pedido cancelado também barra. O teste é feito a cada avaliação.
+Observado em teste:
 
 | Carrinho | Pedido do mesmo cliente | Resultado |
 |---|---|---|
 | `createdAt` 2 h antes do pedido, avaliado de novo por `PUT` depois do pedido | criado depois do carrinho | recuperação barrada |
 | criado com `createdAt` 1 h antes de um pedido já existente | criado depois do `createdAt` | recuperação barrada já na criação |
 | criado sem `createdAt`, depois do pedido | criado antes do carrinho | não barrada |
+| `createdAt` 2 h antes, `PUT` 1 s depois de um pedido cancelado | cancelado, criado depois do carrinho | `PUT` dentro de 60 s do `POST`: sem nova avaliação; `PUT` 75 s depois: barrada |
+| `createdAt` 1 h antes, depois um pedido enviado agora com `createdAt` 2 h antes, `PUT` 75 s depois | `createdAt` anterior ao do carrinho | não barrada |
 
 Consequências para a integração:
 

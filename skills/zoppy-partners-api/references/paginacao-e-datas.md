@@ -10,7 +10,7 @@
 
 ## Listagem completa sem duplicar
 
-Toda listagem pede `after`, `page` e `pageSize` (1 a 50). A ordem dos itens não é por data, então
+Toda listagem pede `after`, `page` e `pageSize` (inteiros; `pageSize` de 1 a 50, decimal dá 500). A ordem dos itens não é por data, então
 junte por `id`:
 
 ```js
@@ -57,23 +57,22 @@ Exemplo medido com o `createdAt` do pedido. O valor gravado volta em UTC.
 
 ## Datas nos filtros da listagem
 
-`after` e `updatedAt` na query string.
+`after` e `updatedAt` na query string. Só a data sem hora é lida diferente nos dois.
 
-| Você manda | Filtra a partir de |
-|---|---|
-| `2026-09-05T00:00:00Z` | 05/09 00:00 UTC |
-| `2026-10-07T14:44:58-03:00` | 07/10 17:44:58 UTC |
-| `2026-09-05T00:00:00` | 05/09 00:00 de Brasília (03:00 UTC) |
-| `2026-09-05` | 05/09 00:00 de Brasília (03:00 UTC) |
-| `08/10/2026` | 10/08/2026 (mês/dia) |
-| `1759859098000` | 422 `Invalid after date` |
-| `abc` | 422 `Invalid after date` |
+| Você manda | Em `after`, filtra a partir de | Em `updatedAt`, filtra a partir de |
+|---|---|---|
+| `2026-09-05T00:00:00Z` | 05/09 00:00 UTC | 05/09 00:00 UTC |
+| `2026-09-05T00:00:00` | 05/09 00:00 de Brasília (03:00 UTC) | 05/09 00:00 de Brasília (03:00 UTC) |
+| `2026-09-05` | 05/09 00:00 de Brasília (03:00 UTC) | 05/09 00:00 UTC |
+
+Só em `after` (medido): `2026-10-07T14:44:58-03:00` filtra a partir de 07/10 17:44:58 UTC; `08/10/2026` vira 10/08/2026 (mês/dia); `1759859098000` e `abc` dão
+422 `Invalid after date`. Em `updatedAt`, texto que não é data dá 422 `Invalid updatedAt date`.
 
 O filtro inclui o próprio instante: um registro criado em `17:44:58Z` aparece com
 `after=2026-10-07T17:44:58Z` e some com `after=2026-10-07T17:44:59Z`.
 
 ## Por que mandar sempre o fuso
 
-A mesma data só com dia vira meia-noite UTC no corpo e meia-noite de Brasília no filtro: são 3
-horas de diferença entre o que você grava e o que você filtra. Com fuso explícito, os dois lados
+A mesma data só com dia vira meia-noite UTC no corpo e no filtro `updatedAt`, mas meia-noite de
+Brasília no filtro `after`: são 3 horas de diferença entre o que você grava e o que você filtra. Com fuso explícito, os dois lados
 batem. Codifique datas com `toISOString()` (UTC) ou com o deslocamento `-03:00` escrito.

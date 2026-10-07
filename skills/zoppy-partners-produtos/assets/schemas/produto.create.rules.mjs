@@ -24,9 +24,11 @@ function checkName(name) {
 
 function checkPrice(price) {
     if (typeof price !== 'number') return [];
-    const stored = Number(price.toPrecision(6));
+    const float32 = Math.fround(price);
+    if (!Number.isFinite(float32)) return [issue('error', 'price', "preço acima de 3.4e38: a API responde 200 e grava 3.40282e+38")];
+    const stored = Number(float32.toPrecision(6));
     if (stored === price) return [];
-    return [issue('warning', 'price', `preço com mais de 6 dígitos significativos é gravado arredondado: ${price} vira ${stored}`)];
+    return [issue('warning', 'price', `preço gravado como float de 32 bits com 6 dígitos significativos: ${price} vira ${stored}`)];
 }
 
 function checkProvider(provider) {

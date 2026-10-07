@@ -1,31 +1,51 @@
 {
     "description": "Corpo do PUT /abandoned-carts/:id (atualizar carrinho abandonado). Substitui valores, URL e itens.",
     "type": "object",
-    "required": ["subtotal", "url"],
+    "required": [
+        "subtotal",
+        "url"
+    ],
     "properties": {
         "subtotal": {
             "type": "number",
             "description": "Valor bruto do carrinho, frete incluído. Ausente ou string responde 400."
         },
         "discount": {
-            "type": ["number", "null"],
+            "type": [
+                "number",
+                "null"
+            ],
             "description": "Desconto. Mande 0 quando não houver: sem o campo o total gravado vira 0."
         },
         "shipping": {
-            "type": ["number", "null"],
+            "type": [
+                "number",
+                "null"
+            ],
             "description": "Frete. Mande 0 quando não houver: sem o campo o total gravado vira 0."
         },
         "url": {
             "type": "string",
-            "description": "Link de recuperação. Obrigatório no PUT: sem ele a API responde 500 e nada muda."
+            "minLength": 1,
+            "description": "Link de recuperação. A chave é obrigatória no PUT: sem ela a API responde 500 e nada muda. Vazia ou só espaços responde 200 e apaga o link."
         },
         "lineItems": {
             "type": "array",
-            "description": "Lista completa de itens. Os itens atuais são apagados e trocados por esta lista; ausente deixa o carrinho sem itens.",
+            "description": "Lista completa de itens. Os itens atuais são apagados e trocados por esta lista; ausente deixa o carrinho sem itens. Lista inválida responde 500 depois de trocar valores e url e apagar os itens antigos.",
             "items": {
                 "type": "object",
                 "description": "{ productId: id Zoppy (UUID) do produto, quantity: número }"
             }
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Ignorado no PUT quando válido; data inválida responde 400."
+        },
+        "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Ignorado no PUT quando válido; data inválida responde 400."
         }
     }
 }
