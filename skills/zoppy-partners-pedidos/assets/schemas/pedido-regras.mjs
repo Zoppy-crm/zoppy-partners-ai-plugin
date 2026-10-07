@@ -29,7 +29,7 @@ function checkTotal(payload) {
         return [warning('shipping', `shipping ${shipping} com desconto cobrindo todos os itens: se o frete foi grátis ou zerado por cupom, envie shipping 0 e tire o frete do subtotal e do discount`)];
     }
     if (shipping > 0) {
-        return [warning('subtotal', `confira se o subtotal já soma o frete: com este payload a Zoppy entende itens = ${money(subtotal - shipping)} e grava total ${total} (itens com desconto, sem frete). Se os itens somam ${subtotal}, envie subtotal ${money(subtotal + shipping)}`)];
+        return [warning('subtotal', `conferência do frete: a Zoppy vai entender itens = ${money(subtotal - shipping)} e gravar total ${total} (itens com desconto, sem frete). Se ${money(subtotal - shipping)} é o valor dos itens, o payload está certo. Só se o valor dos itens for ${subtotal} (subtotal mandado sem o frete), corrija para subtotal ${money(subtotal + shipping)}`)];
     }
     return [];
 }
