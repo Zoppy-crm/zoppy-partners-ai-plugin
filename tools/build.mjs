@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Gera scripts/validate.mjs de cada skill e confere o formato das skills.
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -106,7 +106,22 @@ function skillDirs(root) {
     return readdirSync(skills, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => join(skills, entry.name));
 }
 
+function hasSchemas(dir) {
+    const schemas = join(dir, 'assets', 'schemas');
+    return existsSync(schemas) && readdirSync(schemas).some((name) => name.endsWith('.json'));
+}
+
+function removeValidator(dir, check) {
+    const target = join(dir, 'scripts', 'validate.mjs');
+    if (!existsSync(target)) return [];
+    if (check) return ['scripts/validate.mjs existe sem assets/schemas; rode npm run build'];
+    rmSync(target);
+    if (!readdirSync(dirname(target)).length) rmSync(dirname(target), { recursive: true });
+    return [];
+}
+
 function syncValidator(dir, check) {
+    if (!hasSchemas(dir)) return removeValidator(dir, check);
     const target = join(dir, 'scripts', 'validate.mjs');
     const expected = generatedValidator();
     if (check) return existsSync(target) && readFileSync(target, 'utf8') === expected ? [] : ['scripts/validate.mjs desatualizado; rode npm run build'];

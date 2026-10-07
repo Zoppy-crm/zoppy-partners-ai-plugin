@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -58,9 +58,22 @@ test('build copia o validador e a cópia roda sozinha fora do repo', () => {
 
 test('--check falha quando a cópia foi editada à mão', () => {
     const root = makeRepo();
-    makeSkill(root, 'zoppy-partners-x', 'name: zoppy-partners-x\ndescription: d');
+    const dir = makeSkill(root, 'zoppy-partners-x', 'name: zoppy-partners-x\ndescription: d');
+    writeFileSync(join(dir, 'assets', 'schemas', 'a.json'), '{"type":"object"}');
     execFileSync('node', [join(root, 'tools', 'build.mjs')], { cwd: root });
     const copy = join(root, 'skills', 'zoppy-partners-x', 'scripts', 'validate.mjs');
     writeFileSync(copy, `${readFileSync(copy, 'utf8')}\n// editado`);
     assert.throws(() => execFileSync('node', [join(root, 'tools', 'build.mjs'), '--check'], { cwd: root, stdio: 'pipe' }));
+});
+
+test('skill sem schemas não recebe validador e cópia antiga é removida', () => {
+    const root = makeRepo();
+    const dir = join(root, 'skills', 'zoppy-partners-x');
+    mkdirSync(join(dir, 'scripts'), { recursive: true });
+    writeFileSync(join(dir, 'SKILL.md'), '---\nname: zoppy-partners-x\ndescription: d\n---\n\nCorpo.\n');
+    writeFileSync(join(dir, 'scripts', 'validate.mjs'), '// antigo');
+    assert.throws(() => execFileSync('node', [join(root, 'tools', 'build.mjs'), '--check'], { cwd: root, stdio: 'pipe' }));
+    execFileSync('node', [join(root, 'tools', 'build.mjs')], { cwd: root });
+    assert.equal(existsSync(join(dir, 'scripts', 'validate.mjs')), false);
+    execFileSync('node', [join(root, 'tools', 'build.mjs'), '--check'], { cwd: root });
 });
