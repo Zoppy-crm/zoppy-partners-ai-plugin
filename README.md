@@ -101,6 +101,8 @@ npm run check     # confere formato, segredos e cópias do validador
 
 Não edite `skills/*/scripts/validate.mjs`: ele é gerado. A fonte é `tools/validate.mjs`.
 
+O `npm install` ativa um hook de pre-commit (`.githooks/pre-commit`) que roda `npm run check`, `npm test` e, se estiverem instalados, `claude plugin validate` e `agy plugin validate`. Um commit que deixe o plugin fora do formato é bloqueado.
+
 ### Evals
 
 `evals/<skill>/<caso>/` segue o formato do `claude plugin eval`: `prompt.md` traz o pedido do desenvolvedor e
