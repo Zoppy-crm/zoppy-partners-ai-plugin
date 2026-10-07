@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "description": "Corpo de POST /coupons/shared (cupom compartilhado, sem cliente, com limite de uso).",
+  "required": ["code", "amount"],
+  "properties": {
+    "externalId": { "type": ["number", "string"], "description": "ID do cupom no seu sistema. Obrigatório (ver regras). Gravado como inteiro de 0 a 2147483647." },
+    "code": { "type": "string", "minLength": 1, "description": "Código do cupom, único na conta entre individuais e compartilhados." },
+    "amount": { "type": ["number", "string"], "description": "Valor do desconto. Gravado como inteiro (arredondado)." },
+    "type": { "type": "string", "enum": ["percent", "fixed_cart"], "description": "Padrão fixed_cart." },
+    "expiryDate": { "type": "string", "format": "date-time", "description": "Validade. Padrão 2100-01-01T00:00:00Z." },
+    "minPurchaseValue": { "type": ["number", "string"], "minimum": 0, "description": "Valor mínimo de compra. Padrão: 0 em percent, o próprio amount em fixed_cart." },
+    "usageLimit": { "type": "number", "description": "Total de usos do código. Padrão 1." },
+    "createOnProvider": { "type": "boolean", "description": "Não coberto por esta skill." },
+    "phone": { "type": "string", "description": "Ignorado: o compartilhado não tem cliente." },
+    "usageLimitPerUser": { "type": "number", "description": "Ignorado." }
+  }
+}

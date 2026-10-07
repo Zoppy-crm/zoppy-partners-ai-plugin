@@ -1,0 +1,14 @@
+{
+  "description": "Corpo do POST /products da Partners API da Zoppy. Campos fora desta lista são aceitos e ignorados (não são gravados).",
+  "type": "object",
+  "required": ["name", "status", "price"],
+  "properties": {
+    "externalId": { "type": ["string", "null"], "description": "ID do produto no seu sistema. Não deduplica: dois POST com o mesmo externalId e nomes diferentes criam dois produtos." },
+    "name": { "type": "string", "minLength": 1, "description": "Chave de deduplicação do POST (junto com provider). Gravado com no máximo 255 caracteres." },
+    "status": { "type": "string", "enum": ["publish", "draft", "inactive"], "description": "Minúsculo. Fora da lista ou ausente: 422 Invalid status." },
+    "specification": { "type": ["string", "null"], "enum": ["m", "f", null], "description": "Gênero do produto. Minúsculo. Omita quando não houver." },
+    "price": { "type": "number", "minimum": 0, "description": "Número JSON, nunca string. Gravado com 6 dígitos significativos." },
+    "categories": { "type": ["array", "null"], "items": { "type": "string", "minLength": 1 }, "description": "Lista de nomes de categoria." },
+    "provider": { "type": ["string", "null"], "minLength": 1, "description": "Só letras, números, hífen e underscore, até 50 caracteres. Gravado em minúsculas." }
+  }
+}

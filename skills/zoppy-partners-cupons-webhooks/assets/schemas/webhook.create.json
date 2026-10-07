@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "description": "Corpo de POST /webhooks e PUT /webhooks/{id}.",
+  "required": ["event", "url"],
+  "properties": {
+    "event": { "type": "string", "enum": ["coupon_create"], "description": "Único evento aceito." },
+    "url": { "type": "string", "minLength": 1, "description": "URL que recebe o POST da Zoppy." },
+    "bearerToken": { "type": "string", "description": "Enviado como Authorization: Bearer <token>. Omitir apaga o token salvo." }
+  }
+}

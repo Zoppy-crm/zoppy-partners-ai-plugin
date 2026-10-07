@@ -1,0 +1,11 @@
+{
+  "externalId": "7003",
+  "customerId": "<id do cliente na Zoppy>",
+  "status": "completed",
+  "subtotal": 151.60,
+  "discount": 7.58,
+  "shipping": 20,
+  "createdAt": "2026-09-05T10:26:00-03:00",
+  "completedAt": "2026-09-09T14:00:00-03:00",
+  "lineItems": [{ "productId": "<id do produto na Zoppy>", "quantity": 2 }]
+}

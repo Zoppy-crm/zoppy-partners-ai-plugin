@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "description": "Corpo de POST /coupons (cupom individual, ligado a um telefone).",
+  "required": ["code", "amount", "phone"],
+  "properties": {
+    "externalId": { "type": ["string", "number"], "description": "ID do cupom no seu sistema. Obrigatório (ver regras). Texto livre, até 255 caracteres." },
+    "code": { "type": "string", "minLength": 1, "description": "Código do cupom, único na conta entre individuais e compartilhados." },
+    "amount": { "type": ["number", "string"], "description": "Valor do desconto. Diferente de zero." },
+    "phone": { "type": "string", "minLength": 1, "description": "Telefone do cliente, com pelo menos 10 dígitos. Gravado exatamente como enviado." },
+    "type": { "type": "string", "enum": ["percent", "fixed_cart"], "description": "Padrão fixed_cart." },
+    "expiryDate": { "type": "string", "format": "date-time", "description": "Validade. Padrão 2100-01-01T00:00:00Z." },
+    "minPurchaseValue": { "type": ["number", "string"], "minimum": 0, "description": "Valor mínimo de compra. Padrão: 0 em percent, o próprio amount em fixed_cart." },
+    "awaitingOrder": { "type": "boolean", "description": "Padrão true: o próximo pedido do mesmo telefone sem couponCode consome o cupom." },
+    "used": { "type": "boolean", "description": "Padrão false." },
+    "createOnProvider": { "type": "boolean", "description": "Não coberto por esta skill." },
+    "usageLimit": { "type": "number", "description": "Ignorado neste endpoint: o cupom individual tem um uso." },
+    "usageLimitPerUser": { "type": "number", "description": "Ignorado." },
+    "description": { "type": "string", "description": "Ignorado: não é gravado." }
+  }
+}

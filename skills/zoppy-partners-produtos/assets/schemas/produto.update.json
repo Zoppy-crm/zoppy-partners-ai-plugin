@@ -1,0 +1,14 @@
+{
+  "description": "Corpo do PUT /products/{id} da Partners API da Zoppy. O PUT exige o corpo completo: name, status e price sempre; categories ausente apaga as categorias.",
+  "type": "object",
+  "required": ["name", "status", "price"],
+  "properties": {
+    "externalId": { "type": ["string", "null"], "description": "Ausente mantém o valor gravado; null limpa." },
+    "name": { "type": "string", "minLength": 1, "description": "Não pode ser igual ao nome de outro produto da conta: 422 Product name is already being used." },
+    "status": { "type": "string", "enum": ["publish", "draft", "inactive"] },
+    "specification": { "type": ["string", "null"], "enum": ["m", "f", null], "description": "Ausente ou null mantém o valor gravado." },
+    "price": { "type": "number", "minimum": 0 },
+    "categories": { "type": ["array", "null"], "items": { "type": "string", "minLength": 1 }, "description": "Substitui a lista inteira. Ausente, null ou [] deixa o produto sem categorias." },
+    "provider": { "type": ["string", "null"], "minLength": 1, "description": "Ausente ou null mantém o valor gravado." }
+  }
+}

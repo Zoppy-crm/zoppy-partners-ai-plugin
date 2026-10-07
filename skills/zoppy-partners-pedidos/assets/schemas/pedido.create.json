@@ -1,0 +1,124 @@
+{
+  "type": "object",
+  "required": [
+    "customerId",
+    "status",
+    "subtotal"
+  ],
+  "properties": {
+    "externalId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Id do pedido no seu sistema; único na conta"
+    },
+    "customerId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Id do cliente na Zoppy (o id devolvido por /customers, não o seu externalId)"
+    },
+    "couponCode": {
+      "type": "string",
+      "description": "Código do cupom usado no pedido"
+    },
+    "storeId": {
+      "type": "string",
+      "description": "Id da loja na Zoppy; precisa existir e estar ativa"
+    },
+    "store": {
+      "type": "object",
+      "description": "Alternativa ao storeId: procura loja existente por name ou externalId",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "externalId": {
+          "type": "string"
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "on-hold",
+        "canceled",
+        "processing"
+      ],
+      "description": "Exatamente um destes, em minúsculas"
+    },
+    "subtotal": {
+      "type": "number",
+      "description": "Valor antes do desconto, já com o frete (itens + shipping)"
+    },
+    "discount": {
+      "type": "number",
+      "description": "Desconto sobre os produtos; envie 0 quando não houver"
+    },
+    "shipping": {
+      "type": "number",
+      "description": "Frete cobrado do cliente; frete grátis é 0"
+    },
+    "lineItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "productId",
+          "quantity"
+        ],
+        "properties": {
+          "productId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Id do produto na Zoppy (não o seu externalId)"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data da venda, ISO 8601 com fuso"
+    },
+    "completedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data do pagamento ou confirmação; só gravada com status completed"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "seller": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "revenueRecord": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        }
+      }
+    },
+    "userId": {
+      "type": "string",
+      "description": "Id do usuário vendedor na Zoppy"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "createCoupon": {
+      "type": "boolean"
+    },
+    "orderFromZoppy": {
+      "type": "boolean"
+    }
+  }
+}

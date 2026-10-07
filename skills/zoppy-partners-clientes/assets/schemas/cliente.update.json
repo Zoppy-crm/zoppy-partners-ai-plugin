@@ -1,0 +1,80 @@
+{
+    "description": "Corpo do PUT /customers/{id} da Partners API (atualizar cliente). O PUT exige os mesmos campos do POST; sem address a API responde 500. As regras em cliente.update.rules.mjs avisam o que ela aceita mas grava diferente do esperado.",
+    "type": "object",
+    "required": [
+        "phone",
+        "firstName",
+        "lastName",
+        "address"
+    ],
+    "properties": {
+        "externalId": {
+            "type": "string",
+            "description": "ID do cliente no seu sistema. Se vier, substitui o atual; se faltar, mantém."
+        },
+        "email": {
+            "description": "E-mail. Se faltar ou vier null, mantém o atual. A API não valida formato."
+        },
+        "phone": {
+            "type": "string",
+            "description": "Telefone brasileiro. Trocar o telefone move em segundo plano o histórico do telefone antigo para o novo."
+        },
+        "firstName": {
+            "type": "string",
+            "description": "Primeiro nome. Gravado com a primeira letra de cada palavra em maiúscula."
+        },
+        "lastName": {
+            "type": "string",
+            "description": "Sobrenome. Gravado com a primeira letra de cada palavra em maiúscula."
+        },
+        "birthDate": {
+            "type": [
+                "string",
+                "number",
+                "null"
+            ],
+            "description": "Data de nascimento: YYYY-MM-DD ou ISO 8601. Se faltar ou vier null, mantém."
+        },
+        "gender": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "Gênero, m ou f. Se faltar, mantém; texto vazio apaga."
+        },
+        "address": {
+            "type": "object",
+            "description": "Endereço. Obrigatório no PUT: sem ele a API responde 500.",
+            "properties": {
+                "address1": {
+                    "description": "Rua e número."
+                },
+                "address2": {
+                    "description": "Complemento."
+                },
+                "city": {
+                    "description": "Cidade."
+                },
+                "state": {
+                    "description": "UF."
+                },
+                "postcode": {
+                    "description": "CEP, com ou sem hífen. A resposta devolve só os dígitos."
+                },
+                "country": {
+                    "description": "País."
+                },
+                "latitude": {
+                    "description": "Latitude. Gravada no PUT; se faltar, mantém."
+                },
+                "longitude": {
+                    "description": "Longitude. Gravada no PUT; se faltar, mantém."
+                }
+            }
+        },
+        "customFields": {
+            "type": "array",
+            "description": "Campos personalizados. Fora do escopo desta skill."
+        }
+    }
+}

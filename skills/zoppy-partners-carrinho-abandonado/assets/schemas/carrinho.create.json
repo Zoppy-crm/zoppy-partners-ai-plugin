@@ -1,0 +1,51 @@
+{
+    "description": "Corpo do POST /abandoned-carts (criar carrinho abandonado)",
+    "type": "object",
+    "required": ["customerId", "subtotal", "url"],
+    "properties": {
+        "externalId": {
+            "type": "string",
+            "description": "Id do carrinho no seu sistema. Único entre os carrinhos não excluídos da conta; repetido responde 422."
+        },
+        "customerId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Id Zoppy (UUID) de um cliente já criado na conta. O externalId do cliente não serve: responde 422 Customer not found."
+        },
+        "subtotal": {
+            "type": "number",
+            "description": "Valor bruto do carrinho, frete incluído. Número; string responde 400."
+        },
+        "discount": {
+            "type": ["number", "null"],
+            "description": "Desconto. Mande 0 quando não houver: sem o campo o total gravado vira 0."
+        },
+        "shipping": {
+            "type": ["number", "null"],
+            "description": "Frete. Mande 0 quando não houver: sem o campo o total gravado vira 0."
+        },
+        "url": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Link de recuperação do carrinho. Ausente ou vazio responde 422."
+        },
+        "lineItems": {
+            "type": "array",
+            "description": "Itens do carrinho. Precisa ser lista: objeto responde 500 e o carrinho fica gravado sem itens.",
+            "items": {
+                "type": "object",
+                "description": "{ productId: id Zoppy (UUID) do produto, quantity: número }"
+            }
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Data em que o carrinho foi abandonado, ISO 8601 com fuso. Ausente vira o momento do recebimento."
+        },
+        "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Aceito, mas ignorado: a API grava o momento do recebimento."
+        }
+    }
+}

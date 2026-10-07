@@ -1,0 +1,29 @@
+{
+    "description": "Corpo do POST /customers da Partners API (criar cliente). Reflete o que a API aceita; as regras em cliente.create.rules.mjs avisam o que ela aceita mas grava diferente do esperado.",
+    "type": "object",
+    "required": ["phone", "firstName", "lastName", "address"],
+    "properties": {
+        "externalId": { "type": "string", "description": "ID do cliente no seu sistema. Não impede duplicata: a API não procura cliente por este campo no POST." },
+        "email": { "description": "E-mail. A API não valida formato nem tipo e grava como veio." },
+        "phone": { "type": "string", "description": "Telefone brasileiro, com ou sem 55, +, espaços, parênteses e hífen. É a chave de deduplicação do POST." },
+        "firstName": { "type": "string", "description": "Primeiro nome. Gravado com a primeira letra de cada palavra em maiúscula." },
+        "lastName": { "type": "string", "description": "Sobrenome. Gravado com a primeira letra de cada palavra em maiúscula." },
+        "birthDate": { "type": ["string", "number", "null"], "description": "Data de nascimento: YYYY-MM-DD ou ISO 8601. Texto que não vira data responde 400." },
+        "gender": { "type": ["string", "null"], "description": "Gênero, m ou f. A API aceita qualquer texto e grava em maiúsculas." },
+        "address": {
+            "type": "object",
+            "description": "Endereço do cliente. Obrigatório: sem ele a API responde 422 Address is required.",
+            "properties": {
+                "address1": { "description": "Rua e número." },
+                "address2": { "description": "Complemento." },
+                "city": { "description": "Cidade." },
+                "state": { "description": "UF." },
+                "postcode": { "description": "CEP, com ou sem hífen. A resposta devolve só os dígitos." },
+                "country": { "description": "País." },
+                "latitude": { "description": "Ignorado no POST; só o PUT grava." },
+                "longitude": { "description": "Ignorado no POST; só o PUT grava." }
+            }
+        },
+        "customFields": { "type": "array", "description": "Campos personalizados. Fora do escopo desta skill." }
+    }
+}

@@ -1,0 +1,146 @@
+---
+name: zoppy-partners-pedidos
+description: Envia pedidos para a Partners API da Zoppy (/orders) com o total e as datas que a Zoppy espera. Use ao gerar código que cria, reenvia (PUT), busca, lista ou exclui pedidos; ao montar subtotal, discount e shipping (não existe campo total); ao escolher o status (completed, on-hold, canceled, processing); ao decidir createdAt e completedAt; ao ligar itens, cupom usado, vendedor e loja ao pedido; e ao investigar total negativo, frete descontado duas vezes, pedido fora do período da venda ou itens que sumiram. Triggers EN, send orders to Zoppy, create or update order in Zoppy Partners API, order total, subtotal with shipping, order status, order createdAt, negative order total, order line items. Não use para autenticação, base URL e paginação genérica (veja a skill zoppy-partners-api), cadastro de cliente (zoppy-partners-clientes), cadastro de produto (zoppy-partners-produtos), carrinho abandonado (zoppy-partners-carrinho-abandonado) ou cupom criado pela Zoppy e webhooks (zoppy-partners-cupons-webhooks).
+---
+
+# Pedidos na Partners API da Zoppy
+
+## Antes de gerar código
+
+1. Leia a skill `zoppy-partners-api` para autenticação (`Authorization: Bearer` + `zoppy-access`), base URL e paginação. Nunca coloque token no código: leia de `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e `ZOPPY_PARTNERS_BASE_URL`.
+2. O cliente precisa existir antes (veja a skill `zoppy-partners-clientes`) e os produtos também, se o pedido tiver itens (skill `zoppy-partners-produtos`). O pedido usa os **ids da Zoppy** devolvidos por esses cadastros, não os seus `externalId`.
+3. Valide cada payload antes de enviar:
+
+```bash
+node scripts/validate.mjs --schema=pedido.create '<json>'   # POST /orders
+node scripts/validate.mjs --schema=pedido.update '<json>'   # PUT /orders/{id}
+```
+
+Exit `0` válido, `1` inválido, `2` erro de uso. `ERRO` é payload que a API recusa ou grava com valor errado. `AVISO` é algo que a API aceita com 200 mas grava diferente do que você provavelmente espera: leia cada um.
+
+## Endpoints
+
+| Método e rota | O que faz | Sucesso | Não encontrado |
+|---|---|---|---|
+| `GET /orders?after=...&page=1&pageSize=50` | Lista pedidos com `createdAt` a partir de `after`; `updatedAt` opcional filtra por atualização | 200 `{data, pagination}` | |
+| `GET /orders/{id}` | Busca pelo id da Zoppy | 200 | 404 `Order not found` |
+| `GET /orders/external/{externalId}` | Busca pelo seu id | 200 | 404 `Order not found` |
+| `POST /orders` | Cria | 200 | |
+| `PUT /orders/{id}` | Reenvia o pedido (substitui valores, status, datas e itens) | 200 | 404 `Pedido não encontrado` |
+| `DELETE /orders/{id}` | Exclui | 200 `{"result":true}` | 404 `Order not found` |
+
+O `POST` responde 200, não 201. Depois de excluído, o pedido some das buscas e o mesmo `externalId` pode ser usado de novo.
+
+## Valores: não existe campo `total`
+
+A Zoppy **não recebe `total`** (se vier, é ignorado). Ela grava:
+
+```
+total = subtotal - discount - shipping
+```
+
+O `total` gravado é o valor dos produtos com desconto, **sem frete**. Por isso:
+
+- **`subtotal` = itens + frete, antes do desconto.** Se o `subtotal` vier só com os itens, o frete é descontado do total.
+- **`discount`** = desconto sobre os produtos.
+- **`shipping`** = frete cobrado do cliente. **Frete grátis ou zerado por cupom é `shipping: 0`**, e o frete não entra no `subtotal` nem no `discount`.
+- **Envie sempre `discount` e `shipping`, mesmo que 0.** Sem um deles a API responde 200 mas grava `total` 0.
+- A API não recusa total negativo: `subtotal` menor que `discount + shipping` grava total negativo sem erro.
+
+Na resposta, `total` é o valor gravado e `subtotal` é recalculado como `total + discount + shipping`.
+
+| Pedido real | Payload certo | `total` gravado |
+|---|---|---|
+| Itens 131,60, frete 20, desconto 7,58 | `subtotal 151.60, discount 7.58, shipping 20` | 124,02 |
+| Mesmo pedido com `subtotal` só dos itens (errado) | `subtotal 131.60, discount 7.58, shipping 20` | 104,02 |
+| Itens 100, frete grátis, desconto 10 | `subtotal 100, discount 10, shipping 0` | 90 |
+| Itens 50 com cupom de 100% e frete grátis | `subtotal 50, discount 50, shipping 0` | 0 |
+| Mesmo pedido mandando o frete de 10 como cobrado (errado) | `subtotal 50, discount 60, shipping 10` | -20 |
+
+Números vão como número JSON. `"151.60"` como texto responde 400. A resposta do `POST` e do `PUT` pode trazer o total com casas longas (`124.01999999999998`); o `GET` devolve `124.02`. Compare em centavos.
+
+## Status
+
+Aceita exatamente, em minúsculas: `completed` (pago ou confirmado), `on-hold` (aguardando pagamento), `canceled` (com um L) e `processing`. Qualquer outro valor, inclusive `cancelled`, `Completed`, `pending` ou status ausente, responde `422 Invalid status`.
+
+- `processing` no `POST` é gravado como `on-hold`. No `PUT` fica `processing`. Use `on-hold`.
+- `completedAt` só é gravado com status `completed`; com outro status ele vira `null`.
+- `completed` sem `completedAt`: no `POST` o pedido fica sem `completedAt`; no `PUT` a API mantém o `completedAt` anterior.
+
+## Datas: `createdAt` é a data da venda
+
+`createdAt` é a data do pedido. É por ela que a listagem filtra (`after`). Se ela faltar, a Zoppy usa outra data:
+
+| Operação | `createdAt` gravado |
+|---|---|
+| `POST` com `createdAt` | o `createdAt` enviado |
+| `POST` sem `createdAt`, com `completedAt` | o `completedAt` (mesmo com status diferente de `completed`) |
+| `POST` sem os dois | o momento em que a Zoppy recebeu |
+| `PUT` com `createdAt` | o `createdAt` enviado |
+| `PUT` sem `createdAt`, com `completedAt` | **troca a data do pedido pela do `completedAt`** |
+| `PUT` sem os dois | mantém a data atual |
+
+Venda em 05/09 confirmada em 09/09 sem `createdAt` fica datada de 09/09 e não aparece no período da venda. **Envie sempre `createdAt`, inclusive no `PUT`.**
+
+Formato: ISO 8601 com fuso, ex. `2026-09-05T10:26:00-03:00`. O que a API faz com outros formatos:
+
+| Enviado | Gravado (UTC) |
+|---|---|
+| `2026-09-05T10:26:00-03:00` | `2026-09-05T13:26:00.000Z` |
+| `2026-09-05 10:26` ou `2026-09-05T10:26:00` (sem fuso) | `2026-09-05T13:26:00.000Z` (lido no horário de Brasília) |
+| `2026-09-05` (só a data) | `2026-09-05T00:00:00.000Z`, que é 04/09 às 21h em Brasília |
+| `05/09/2026` | `2026-05-09T03:00:00.000Z` (lido como mês/dia: 9 de maio) |
+| `ontem` | 400 `createdAt must be a Date instance` |
+
+O validador recusa data sem fuso de propósito, para não depender dessa interpretação.
+
+## `PUT` é reenvio completo
+
+O `PUT /orders/{id}` recalcula o total e substitui o pedido. Mande o pedido inteiro, como no `POST`, sem `externalId` e `customerId`:
+
+- Recalcula `total` com o `subtotal`, `discount` e `shipping` enviados. Sem `discount` ou `shipping`, grava total 0.
+- **`lineItems` ausente apaga todos os itens do pedido.** Reenvie os itens sempre.
+- `externalId` e `customerId` no corpo são ignorados: não mudam depois de criados.
+- Sem `couponCode`, `provider`, `storeId`/`store` ou vendedor, mantém o que já estava. O `PUT` não remove cupom nem vendedor.
+- `couponCode` que não existe na conta responde `422 Coupon code not found` (o `POST` aceita qualquer código).
+
+**Confira o `PUT` lendo de volta.** Um `PUT` enviado poucos segundos depois do `POST` do mesmo pedido às vezes é desfeito: o processamento do `POST` regrava a versão anterior e o `GET` volta com os valores do `POST`, mesmo com o `PUT` tendo respondido 200. Depois do `PUT`, espere alguns segundos, faça `GET /orders/{id}` e, se o pedido não refletir o `PUT`, reenvie.
+
+Para sincronizar sem duplicar: `GET /orders/external/{externalId}`; 404 → `POST /orders`; 200 → `PUT /orders/{id}` com o `id` devolvido.
+
+## Cliente, itens, cupom, vendedor e loja
+
+- **`customerId`** (obrigatório no `POST`): id da Zoppy do cliente. O `externalId` do cliente ou um id inexistente responde `422 Customer not found`. O endereço e o telefone do pedido vêm do cadastro do cliente; não existe campo de endereço no pedido. Pedido de cliente excluído responde `422 Customer address not found` no `PUT`.
+- **`lineItems`**: `[{ "productId": "<id da Zoppy>", "quantity": 2 }]`. `productId` inexistente ou com o `externalId` do produto é descartado sem erro. `quantity` é obrigatório, número, mínimo 0, e é gravado inteiro (1.5 vira 2). Não há preço por item: a resposta traz o preço do cadastro do produto. Itens em outro campo (`items`) são ignorados.
+- **`couponCode`**: código do cupom usado. Se o cupom existir na conta, a resposta traz `couponUsed` e, segundos depois, o cupom passa a constar como usado. Com cupom existente e `discount: 0`, a Zoppy preenche o `discount` com o valor do cupom e o `subtotal` lido de volta aumenta: envie o desconto real.
+- **Vendedor**: `userId` (id de um usuário da conta) ou `seller` com `email`, `revenueRecord` ou `phone`. O `userId` tem prioridade; se não achar, tenta o `seller`; se nada casar, o pedido fica sem vendedor, sem erro. Prefira `email` ou `userId`: a busca por `phone` pode não achar o vendedor dependendo de como o telefone dele foi cadastrado.
+- **Loja**: `storeId` (id da Zoppy) precisa existir e estar ativa, senão 422. O objeto `store` procura uma loja ativa por `name` ou `externalId` e nunca cria loja; sem correspondência, e sem loja informada, o pedido vai para a loja padrão "Integrador Externo". `storeId` tem prioridade sobre `store`.
+- **`provider`**: texto livre, gravado e devolvido como veio.
+- **`createCoupon`** e **`orderFromZoppy`**: aceitos (booleanos), mas não alteram o pedido gravado nem criam cupom.
+
+Todo `POST` e `PUT` aceito entra no processamento de pedidos da Zoppy segundos depois: registra o uso do cupom e roda as automações de pedido configuradas na conta (por exemplo, gerar um cupom de giftback para o telefone do cliente, que aparece em `couponCreated` no `GET`). O que dispara depende da configuração da conta.
+
+## Idempotência
+
+O mesmo `externalId` duas vezes no `POST` responde `422 External id already exists` e não cria outro pedido. Sem `externalId`, cada `POST` cria um pedido novo. Envie sempre o `externalId`.
+
+## Erros comuns
+
+| Situação | Status e corpo |
+|---|---|
+| Campo com tipo errado ou ausente (`subtotal`, `customerId`, `lineItems[].quantity`) | 400 `{"message":["subtotal must be a number conforming to the specified constraints"],...}` (lista) |
+| Regra de negócio | 422 `{"message":"Invalid status",...}` (texto; várias regras saem juntas, separadas por vírgula) |
+| `externalId` repetido | 422 `External id already exists` |
+| Cliente inexistente | 422 `Customer not found` |
+| Loja inexistente ou inativa | 422 `Store not found for this company (storeId: ...)` ou `Store "<nome>" is inactive and cannot receive orders ...` |
+| Pedido inexistente | 404 `Order not found` (GET, DELETE) ou `Pedido não encontrado` (PUT) |
+
+Lista completa em `references/erros.md`.
+
+## Mais detalhes
+
+- `references/campos.md`: todos os campos do request e da resposta.
+- `references/erros.md`: erros com corpo real e casos de borda.
+- `assets/examples/01-criar-pedido.mjs` e `.curl.sh`: cria cliente e produto, cria pedido com frete e desconto, confere `total`, `subtotal`, datas e externalId repetido, e apaga tudo.
+- `assets/examples/02-reenviar-pedido-put.mjs` e `.curl.sh`: reenvio por `PUT` conferindo total recalculado, `createdAt` mantido e itens.
+- `assets/examples/*.fixture.json`: payloads do caso de frete descontado duas vezes, errado e certo, para rodar no validador.
