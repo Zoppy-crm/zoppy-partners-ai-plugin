@@ -11,12 +11,17 @@ recuperação (`url`) que a Zoppy usa nos fluxos de carrinho abandonado da conta
 ## Antes de gerar código
 
 1. Leia a skill `zoppy-partners-api` para autenticação (`Authorization: Bearer` e `zoppy-access`),
-   base URL e formato de erro. Leia as variáveis `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e
-   `ZOPPY_PARTNERS_BASE_URL` do ambiente; nunca escreva token no código.
+   base URL e formato de erro. Credenciais: leia `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e
+   `ZOPPY_PARTNERS_BASE_URL` só dentro do código. Nunca imprima, ecoe ou liste o ambiente (`env`,
+   `printenv`, `echo $ZOPPY_...`) nem cole os valores em arquivo, log ou resposta; para conferir
+   se existem, teste só a presença (`process.env[k] ? 'definida' : 'AUSENTE'`), sem mostrar o valor.
 2. Crie antes o cliente (skill `zoppy-partners-clientes`) e os produtos (skill
    `zoppy-partners-produtos`). O carrinho usa os **ids da Zoppy** devolvidos por eles, não o seu
    `externalId`.
-3. Valide cada corpo antes de enviar:
+3. Dado criado em teste ou só para ver a resposta leva o prefixo definido pelo usuário e é
+   apagado no fim (regra em `zoppy-partners-api`).
+4. Todo corpo de `POST` e `PUT` de carrinho passa pelo validador antes de ser enviado ou de entrar
+   no código que você devolve:
 
 ```bash
 node scripts/validate.mjs --schema=carrinho.create '<json>'   # POST
@@ -49,7 +54,7 @@ O `POST` responde 200, não 201.
 | `url` | string | sim | Link de recuperação. Ausente ou `""`: 422 `Abandoned Cart URL is required.`. Espaços nas pontas são removidos |
 | `externalId` | string | não | Seu id do carrinho. Repetido: 422 `External id already exists` |
 | `lineItems` | lista | não | `[{ "productId": "<id da Zoppy>", "quantity": 2 }]`. Precisa ser lista |
-| `createdAt` | data ISO 8601 com fuso | não | Data do abandono. Ausente: vira o momento do recebimento |
+| `createdAt` | data ISO 8601 com fuso | não | Momento do abandono, não a hora do envio (veja "Recuperação e pedidos"). Ausente: vira o momento do recebimento |
 | `updatedAt` | data | não | Ignorado: a API grava o momento do recebimento |
 
 Detalhe de cada campo, da resposta e da listagem em [references/campos.md](references/campos.md).
@@ -134,8 +139,10 @@ Para conferir um envio, compare `total` e `discount`, não `subtotal` e `shippin
 - A Zoppy **não inicia** a recuperação de um carrinho quando já existe pedido, de qualquer status,
   com o mesmo telefone do cliente do carrinho e com `createdAt` (a data gravada do pedido, não a
   hora do envio) **depois** do `createdAt` do carrinho. O teste é feito a cada avaliação.
-- Por isso o `createdAt` importa: mande a data real do abandono. Sem ele, a data é o momento do
-  envio, e um pedido feito antes desse envio não barra a recuperação.
+- Por isso o `createdAt` importa: mande o momento do abandono, quando o cliente parou de mexer no
+  carrinho, e não a hora em que você envia. Se o seu sistema não guarda esse momento, use a hora
+  da última atualização do carrinho no seu sistema; não invente um horário. Sem `createdAt`, a
+  data é o momento do envio, e um pedido feito entre o abandono e o envio não barra a recuperação.
 - O carrinho **não é marcado como convertido**: não há campo de status ou conversão na resposta,
   e ela não muda quando chega o pedido.
 

@@ -35,7 +35,9 @@ git clone https://github.com/Zoppy-crm/zoppy-partners-ai-plugin
 agy plugin install ./zoppy-partners-ai-plugin
 ```
 
-Ou copie só as skills para o seu projeto, em `.agents/skills/` (veja abaixo).
+Instalado como plugin, ele também traz `rules/zoppy-partners.md`, regra que o Antigravity aplica em
+toda conversa (credenciais, validador e dados de teste). Ou copie só as skills para o seu projeto, em
+`.agents/skills/` (veja abaixo); cada `SKILL.md` repete essas regras.
 
 **Codex, Cursor, GitHub Copilot e outras ferramentas compatíveis com Agent Skills**
 

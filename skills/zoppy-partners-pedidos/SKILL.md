@@ -7,9 +7,10 @@ description: "Envia pedidos para a Partners API da Zoppy (/orders) com o total e
 
 ## Antes de gerar código
 
-1. Leia a skill `zoppy-partners-api` para autenticação (`Authorization: Bearer` + `zoppy-access`), base URL e paginação. Nunca coloque token no código: leia de `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e `ZOPPY_PARTNERS_BASE_URL`.
+1. Leia a skill `zoppy-partners-api` para autenticação (`Authorization: Bearer` + `zoppy-access`), base URL e paginação. Credenciais: leia `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e `ZOPPY_PARTNERS_BASE_URL` só dentro do código. Nunca imprima, ecoe ou liste o ambiente (`env`, `printenv`, `echo $ZOPPY_...`) nem cole os valores em arquivo, log ou resposta; para conferir se existem, teste só a presença (`process.env[k] ? 'definida' : 'AUSENTE'`), sem mostrar o valor.
 2. O cliente precisa existir antes (veja a skill `zoppy-partners-clientes`) e os produtos também, se o pedido tiver itens (skill `zoppy-partners-produtos`). O pedido usa os **ids da Zoppy** devolvidos por esses cadastros, não os seus `externalId`.
-3. Valide cada payload antes de enviar:
+3. Dado criado em teste ou só para ver a resposta leva o prefixo definido pelo usuário e é apagado no fim (regra em `zoppy-partners-api`), inclusive os cupons que as automações da conta geram a partir do pedido (seção "Automações da conta").
+4. Todo corpo de `POST` e `PUT` de pedido passa pelo validador antes de ser enviado ou de entrar no código que você devolve:
 
 ```bash
 node scripts/validate.mjs --schema=pedido.create '<json>'   # POST /orders
@@ -118,7 +119,12 @@ Para sincronizar sem duplicar: `GET /orders/external/{externalId}`; 404 → `POS
 - **`provider`**: texto livre, gravado e devolvido como veio.
 - **`createCoupon`** e **`orderFromZoppy`**: aceitos (booleanos), mas não alteram o pedido gravado nem criam cupom.
 
-Todo `POST` e `PUT` aceito entra no processamento de pedidos da Zoppy segundos depois: registra o uso do cupom e roda as automações de pedido configuradas na conta (por exemplo, gerar um cupom de giftback para o telefone do cliente, que aparece em `couponCreated` no `GET`). O que dispara depende da configuração da conta.
+### Automações da conta
+
+Todo `POST` e `PUT` aceito entra no processamento de pedidos da Zoppy segundos depois: registra o uso do cupom e roda as automações de pedido configuradas na conta. Pedido `completed`, e também pedido em outro status se a conta tiver fluxo para ele (um fluxo de pedido `on-hold`, por exemplo), pode disparar um fluxo que cria cupom ou giftback para o telefone do cliente. O cupom aparece segundos depois em `couponCreated` no `GET /orders/{id}` e em `GET /coupons/order/{id}`. O que dispara depende da configuração da conta.
+
+- Ao testar, depois de cada pedido espere alguns segundos, liste esses cupons (`GET /coupons/order/{id}` ou `GET /coupons/phone/{telefone}/many`) e apague-os na limpeza (skill `zoppy-partners-cupons-webhooks`).
+- Antes de enviar pedidos reais ou carga histórica, confira com o time da Zoppy quais fluxos estão ligados na conta: o cliente pode receber cupom gerado por esses fluxos.
 
 ## Idempotência
 

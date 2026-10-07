@@ -50,7 +50,7 @@
         "createdAt": {
             "type": "string",
             "format": "date-time",
-            "description": "Data em que o carrinho foi abandonado, ISO 8601 com fuso. Ausente vira o momento do recebimento. A API também aceita outros formatos, mas este validador exige ISO 8601 com fuso."
+            "description": "Momento do abandono (quando o cliente parou de mexer no carrinho), não a hora do envio; sem esse dado, a última atualização do carrinho no seu sistema. ISO 8601 com fuso. Ausente vira o momento do recebimento. A API também aceita outros formatos, mas este validador exige ISO 8601 com fuso."
         },
         "updatedAt": {
             "type": "string",

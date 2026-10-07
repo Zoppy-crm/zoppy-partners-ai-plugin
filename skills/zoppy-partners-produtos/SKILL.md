@@ -9,8 +9,12 @@ description: "Cadastra e mantém produtos na Partners API da Zoppy (POST, GET, P
 
 1. Autenticação, base URL e formato de erro estão na skill **zoppy-partners-api**. Toda chamada leva
    `Authorization: Bearer <token>` e `zoppy-access: <chave>`, lidos de variáveis de ambiente
-   (`ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS`, `ZOPPY_PARTNERS_BASE_URL`). Nunca escreva o token no código.
-2. Valide cada corpo antes de enviar:
+   (`ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS`, `ZOPPY_PARTNERS_BASE_URL`). Credenciais: leia essas variáveis só
+   dentro do código. Nunca imprima, ecoe ou liste o ambiente (`env`, `printenv`, `echo $ZOPPY_...`) nem cole
+   os valores em arquivo, log ou resposta; para conferir se existem, teste só a presença
+   (`process.env[k] ? 'definida' : 'AUSENTE'`), sem mostrar o valor.
+2. Todo corpo de `POST` e `PUT` de produto passa pelo validador antes de ser enviado ou de entrar no código
+   que você devolve, mesmo o mais simples:
    ```bash
    node scripts/validate.mjs --schema=produto.create '<json>'   # POST /products
    node scripts/validate.mjs --schema=produto.update '<json>'   # PUT /products/{id}
@@ -22,6 +26,8 @@ description: "Cadastra e mantém produtos na Partners API da Zoppy (POST, GET, P
    uso incorreto. `--file=<caminho>` lê o payload de um arquivo, `--json` devolve o resultado para máquina e
    `--help` mostra o uso. `AVISO` não bloqueia, mas descreve um efeito que você provavelmente não quer.
 3. Guarde o `id` que a Zoppy devolve. É ele, e não o seu `externalId`, que vai no `productId` do pedido.
+4. Dado criado em teste ou só para ver a resposta leva o prefixo definido pelo usuário e é apagado no fim
+   (regra em `zoppy-partners-api`).
 
 ## Endpoints
 

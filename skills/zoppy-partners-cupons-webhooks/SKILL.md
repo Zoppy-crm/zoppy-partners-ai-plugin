@@ -7,8 +7,13 @@ description: "Registra na Partners API da Zoppy o cupom criado no sistema do par
 
 ## Antes de gerar código
 
-1. Autenticação, URLs base e formato de erro estão na skill zoppy-partners-api.
-2. Rode o validador desta skill em todo corpo de cupom ou webhook antes de enviar:
+1. Autenticação, URLs base e formato de erro estão na skill zoppy-partners-api. Credenciais: leia
+   `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e `ZOPPY_PARTNERS_BASE_URL` só dentro do código. Nunca imprima,
+   ecoe ou liste o ambiente (`env`, `printenv`, `echo $ZOPPY_...`) nem cole os valores em arquivo, log ou
+   resposta; para conferir se existem, teste só a presença (`process.env[k] ? 'definida' : 'AUSENTE'`), sem
+   mostrar o valor.
+2. Todo corpo de criação de cupom ou webhook passa pelo validador desta skill antes de ser enviado ou
+   de entrar no código que você devolve:
    ```bash
    node scripts/validate.mjs --schema=cupom.create '<json>'
    node scripts/validate.mjs --schema=cupom-compartilhado.create '<json>'
@@ -23,6 +28,8 @@ description: "Registra na Partners API da Zoppy o cupom criado no sistema do par
    você não manda o campo.
 3. Mande sempre `externalId`, `type`, `minPurchaseValue`, `expiryDate` e, no individual,
    `awaitingOrder`. Os padrões da Zoppy para esses campos raramente são o que você quer.
+4. Dado criado em teste ou só para ver a resposta leva o prefixo definido pelo usuário e é apagado no fim
+   (regra em `zoppy-partners-api`), inclusive os cupons gerados pelas automações da conta (abaixo).
 
 ## Dois fluxos de cupom
 
@@ -34,6 +41,12 @@ description: "Registra na Partners API da Zoppy o cupom criado no sistema do par
 Um cupom registrado por você (fluxo B) não dispara o webhook `coupon_create`: você não recebe de
 volta o cupom que você mesmo mandou. O campo `createCoupon` do pedido não cria cupom: quem gera o
 cupom do fluxo A é o fluxo de automação configurado no painel da Zoppy, não a API.
+
+**Automações da conta ao testar.** Pedido `completed`, e também pedido em outro status se a conta
+tiver fluxo para ele (por exemplo, `on-hold`), pode disparar um fluxo que cria cupom ou giftback
+para o telefone do cliente, segundos depois do pedido. Ao testar com pedidos, liste esses cupons
+(`GET /coupons/order/{orderId}` de cada pedido, ou `GET /coupons/phone/{phone}/many`) e apague-os na
+limpeza, junto com os cupons que você criou.
 
 ## Endpoints
 
@@ -78,6 +91,9 @@ voltam 422 com a mensagem em `message`; busca sem resultado volta 404 `Coupon no
   `description` (não são gravados).
 - A resposta do `POST` não traz `customer`; as buscas trazem `customer` quando existe um cliente
   com o mesmo telefone. Cadastre o cliente antes (skill zoppy-partners-clientes).
+- A leitura (`GET /coupons/...`) não devolve `phone` nem `awaitingOrder`. Para conferir o vínculo
+  com o cliente, use `customer` da resposta ou `GET /coupons/phone/{phone}/many`; `awaitingOrder`
+  não é legível pela API, então confie no valor que você enviou.
 - `acumulative` (se combina com outras promoções) volta sempre `true` no cupom que você registra.
 
 Corpo recomendado:

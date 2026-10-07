@@ -11,15 +11,32 @@ schema nem validador: para validar um corpo de requisição, use o validador da 
 
 ## Antes de gerar código
 
-1. Leia as credenciais de variáveis de ambiente, nunca do código:
-   `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS`, `ZOPPY_PARTNERS_BASE_URL`. Falhe cedo dizendo qual
-   variável falta. Nunca escreva o token em arquivo versionado, log ou mensagem de erro.
+1. Credenciais: leia `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e `ZOPPY_PARTNERS_BASE_URL` só
+   dentro do código (`process.env`) e falhe cedo dizendo qual variável falta. Nunca imprima,
+   ecoe ou liste o ambiente (`env`, `printenv`, `set`, `echo $ZOPPY_...`) e nunca cole os
+   valores em arquivo, log, mensagem de erro ou resposta. Para conferir se existem, teste só a
+   presença, sem mostrar o valor:
+   `node -e "for (const k of ['ZOPPY_PARTNERS_TOKEN','ZOPPY_ACCESS','ZOPPY_PARTNERS_BASE_URL']) console.log(k, process.env[k] ? 'definida' : 'AUSENTE')"`.
 2. Mande sempre os três headers: `Authorization: Bearer <token>`, `zoppy-access: <chave>` e
    `Content-Type: application/json`.
 3. Datas sempre em ISO 8601 com fuso (`2026-09-05T10:26:00-03:00` ou `2026-09-05T13:26:00Z`).
 4. Siga a ordem de envio desta página e guarde o `id` que a Zoppy devolve: pedidos e carrinhos
    referenciam cliente e produto pelo `id` da Zoppy, não pelo seu `externalId`.
-5. Antes de montar o corpo de um recurso, abra a skill do recurso e rode o validador dela.
+5. Antes de montar o corpo de um recurso, abra a skill do recurso e rode o validador dela em todo
+   corpo de `POST` e `PUT`, de qualquer recurso, inclusive cliente e produto.
+6. Todo dado criado em teste segue a seção "Dados criados em teste", abaixo.
+
+## Dados criados em teste
+
+- Todo dado que você criar durante desenvolvimento, teste ou descoberta (cliente, produto,
+  pedido, carrinho, cupom, webhook) leva o prefixo ou a marcação que o usuário definiu, no
+  `externalId` e no nome ou código, e é apagado no fim. Vale também para a chamada rápida feita
+  só para ver o formato de uma resposta. Se o usuário não definiu um prefixo, pergunte antes de
+  criar.
+- Não crie dado avulso (`temp`, `TESTE123`) para descobrir o formato da resposta: ele está nos
+  exemplos (`assets/examples`) e nas referências de cada skill.
+- Pedidos podem disparar as automações da conta, que criam cupom ou giftback para o cliente
+  (veja zoppy-partners-pedidos). Na limpeza, liste e apague também esses cupons.
 
 ## URLs base
 
