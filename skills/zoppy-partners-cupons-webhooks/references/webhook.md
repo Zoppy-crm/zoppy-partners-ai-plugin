@@ -64,9 +64,12 @@ você já processou. Responda 2xx assim que receber e processe depois.
 
 1. Responda 2xx.
 2. `GET /coupons/code/{code}` (ou `GET /coupons/order/{orderId}`) para ler `amount`, `type`,
-   `minPurchaseValue`, `expiryDate`, `acumulative`, `isValid` e `customer`.
+   `minPurchaseValue`, `expiryDate`, `acumulative`, `isValid` e `customer`. O cupom já está
+   disponível nessas consultas segundos depois do pedido que o gerou.
 3. Crie o cupom no seu sistema com esses valores. `acumulative: false` significa não combinar com
-   outras promoções. `used: null` significa não usado.
+   outras promoções. `used: null` significa não usado. Faça o seu checkout cobrar
+   `minPurchaseValue` e a validade: a Zoppy não confere o mínimo quando o pedido chega com
+   `couponCode`.
 4. Devolva o seu ID: `PUT /coupons/code/{code}` com `{"externalId":"<seu id>"}`.
 5. Quando o cliente usar o cupom, mande o pedido com `couponCode` (skill zoppy-partners-pedidos).
 

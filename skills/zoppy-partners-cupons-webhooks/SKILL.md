@@ -174,6 +174,9 @@ O resgate é informado no pedido, no campo `couponCode` (skill zoppy-partners-pe
 - `POST /orders` aceita `couponCode` que não existe (200, `couponUsed: null`). Já
   `PUT /orders/{id}` recusa com 422 `Coupon code not found`, inclusive para código de cupom
   compartilhado.
+- A Zoppy não confere `minPurchaseValue` ao baixar o cupom: um pedido de 100 com um giftback de
+  mínimo 120 foi aceito, o cupom virou `used: true` e o `discount` 0 do pedido virou 30. Aplique
+  as regras do cupom (mínimo e validade) no seu checkout.
 - Depois de usado, o cupom continua aparecendo em `GET /coupons/code/{code}` com `used: true` e
   `isValid: false`, e sai das buscas por telefone. Isso não impede que ele seja aplicado de novo
   a um pedido sem código (regra 1).
@@ -209,9 +212,19 @@ Authorization: Bearer <bearerToken>     (só se você cadastrou bearerToken)
 - Qualquer resposta fora de 2xx, ou falha de conexão, conta como falha e a Zoppy tenta de novo,
   em intervalos crescentes a partir de cerca de 2 segundos, até 10 tentativas. Responda 2xx logo
   e processe depois; use `code` como chave para não criar o mesmo cupom duas vezes.
+- O cupom gerado pelo fluxo já aparece na Partners API segundos depois do pedido (2 s no teste),
+  em `GET /coupons/order/{orderId}`, `/code/{code}`, `/{id}` e nas buscas por telefone. Tipo,
+  valor, mínimo, validade e `acumulative` vêm da etapa do fluxo: num giftback de 15% com validade
+  de 45 dias, um pedido `completed` de 200 gerou `type: fixed_cart`, `amount: 30`,
+  `minPurchaseValue: 120`, `expiryDate` 45 dias depois às 23:59:59 UTC e `acumulative: false`;
+  num cupom de 10% com validade de 30 dias disparado por pedido `on-hold`, cada pedido gerou um
+  cupom novo com `type: percent`, `amount: 10` e `minPurchaseValue: 0`.
 - No cupom gerado pela Zoppy, `externalId` vem `null` e `used` vem `null` (trate como não usado),
   e `acumulative` vem da etapa do fluxo, podendo ser `false`. Respeite esse valor ao criar o
   cupom do seu lado.
+- O cupom gerado pelo fluxo não fica aguardando pedido: um pedido seguinte do mesmo telefone sem
+  `couponCode` não recebe o cupom. Com `couponCode`, o pedido devolve `couponUsed`, o cupom vira
+  `used: true` e não é aplicado de novo depois.
 - Depois de criar do seu lado, devolva o seu ID com `PUT /coupons/code/{code}` e
   `{"externalId": "..."}`; a partir daí `GET /coupons/external/{externalId}` encontra o cupom.
 
