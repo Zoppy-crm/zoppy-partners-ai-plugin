@@ -73,6 +73,9 @@ considera só a validade. `externalId` volta como número.
 - `PUT /coupons/code/{code}` com `{"externalId": "novo"}` troca o seu ID; a busca pelo ID antigo
   deixa de achar o cupom.
 - Cupom usado (`used: true`) volta com `isValid: false`.
+- Cupom gerado por fluxo de automação não fica aguardando pedido (um pedido seguinte sem
+  `couponCode` não o recebe) e não aparece em `GET /coupons/external/null`. Depois de baixado por
+  `couponCode`, sai das buscas por telefone (404) e não é aplicado a um pedido seguinte.
 - Pedido com `couponCode` de cupom individual existente marca o cupom como usado e, se o pedido
   veio com `discount` 0, a Zoppy grava o desconto calculado pelo cupom (10% de 50 vira 5).
 - Com `awaitingOrder` `true`, um pedido do mesmo telefone sem `couponCode` recebe o cupom
