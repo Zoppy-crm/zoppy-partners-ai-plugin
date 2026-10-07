@@ -1,6 +1,6 @@
 # Zoppy Partners AI Plugin
 
-Agent Skills para a sua IA de código (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot) integrar com a
+Agent Skills para a sua IA de código (Claude Code, Antigravity, Codex, Cursor, GitHub Copilot) integrar com a
 [Partners API da Zoppy](https://partners.zoppy.com.br) sem errar o contrato: campos, valores, datas, reenvio e erros.
 
 Cada afirmação das skills foi conferida no código da API e testada contra o ambiente de staging. Cada skill
@@ -26,11 +26,16 @@ traz exemplos executáveis e um validador de payload que a IA roda antes de devo
 /plugin install zoppy-partners@zoppy
 ```
 
-**Gemini CLI**
+**Antigravity (CLI `agy` e IDE)**
 
+Instale como plugin a partir de um clone do repositório:
+
+```bash
+git clone https://github.com/Zoppy-crm/zoppy-partners-ai-plugin
+agy plugin install ./zoppy-partners-ai-plugin
 ```
-gemini skills install https://github.com/Zoppy-crm/zoppy-partners-ai-plugin
-```
+
+Ou copie só as skills para o seu projeto, em `.agents/skills/` (veja abaixo).
 
 **Codex, Cursor, GitHub Copilot e outras ferramentas compatíveis com Agent Skills**
 
@@ -41,7 +46,14 @@ git clone https://github.com/Zoppy-crm/zoppy-partners-ai-plugin /tmp/zoppy-skill
 mkdir -p .agents/skills && cp -r /tmp/zoppy-skills/skills/* .agents/skills/
 ```
 
-Cada pasta funciona sozinha, então você pode copiar só as skills que usar.
+Cada pasta funciona sozinha, então você pode copiar só as skills que usar. Para valer em todos os seus
+projetos, use a pasta de usuário da sua ferramenta (por exemplo `~/.agents/skills/` no Codex, Cursor e Copilot).
+
+**Gemini CLI**
+
+Desde 18/06/2026 o Gemini CLI atende só licenças Gemini Code Assist Standard/Enterprise e chaves de API pagas
+do Google Cloud; nos demais casos o caminho é o Antigravity, acima. Com Gemini CLI ativo, copie as skills para
+`.agents/skills/` como nas outras ferramentas.
 
 ## Credenciais
 

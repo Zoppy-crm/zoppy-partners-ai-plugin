@@ -1,0 +1,5 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "zoppy-partners",
+  "description": "Skills para integrar com a Partners API da Zoppy: clientes, produtos, pedidos, carrinho abandonado, cupons e webhooks."
+}
