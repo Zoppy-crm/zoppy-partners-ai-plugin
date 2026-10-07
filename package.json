@@ -1,0 +1,13 @@
+{
+  "name": "zoppy-partners-ai-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node --test tools/test/",
+    "build": "node tools/build.mjs",
+    "check": "node tools/build.mjs --check",
+    "smoke": "node tools/smoke.mjs"
+  }
+}

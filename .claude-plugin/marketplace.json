@@ -1,0 +1,13 @@
+{
+  "name": "zoppy",
+  "owner": { "name": "Zoppy" },
+  "plugins": [
+    {
+      "name": "zoppy-partners",
+      "source": "./",
+      "description": "Integração com a Partners API da Zoppy",
+      "version": "0.1.0",
+      "category": "e-commerce"
+    }
+  ]
+}

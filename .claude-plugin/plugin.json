@@ -1,0 +1,10 @@
+{
+  "name": "zoppy-partners",
+  "version": "0.1.0",
+  "description": "Skills para integrar com a Partners API da Zoppy: clientes, produtos, pedidos, carrinho abandonado, cupons e webhooks.",
+  "author": { "name": "Zoppy", "url": "https://www.zoppy.com.br" },
+  "homepage": "https://partners.zoppy.com.br",
+  "repository": "https://github.com/Zoppy-crm/zoppy-partners-ai-plugin",
+  "license": "MIT",
+  "keywords": ["zoppy", "partners", "api", "crm", "e-commerce"]
+}
