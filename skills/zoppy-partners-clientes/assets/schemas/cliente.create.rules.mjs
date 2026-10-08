@@ -1,3 +1,4 @@
+// @ts-check
 // Regras de negócio do POST /customers, provadas contra a Partners API.
 // Cada aviso descreve algo que a API aceita (200) mas grava diferente do que o integrador espera.
 
@@ -9,11 +10,23 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const HAS_TIME = /\d{2}:\d{2}/;
 const HAS_ZONE = /(Z|[+-]\d{2}:?\d{2})$/;
 
+/** @typedef {import('../../scripts/validate.mjs').Issue} Issue */
+/**
+ * Payload de cliente que já passou pelo schema; campos fora do schema também chegam aqui.
+ * @typedef {{ externalId?: string, email?: unknown, phone: string, firstName: string, lastName: string, birthDate?: string | number | null, gender?: string | null, address: Record<string, unknown>, customFields?: unknown[] } & Record<string, unknown>} CustomerPayload
+ */
+
+/** @type {(field: string, message: string) => Issue} */
 const warning = (field, message) => ({ level: 'warning', field, message });
+/** @type {(field: string, message: string) => Issue} */
 const error = (field, message) => ({ level: 'error', field, message });
 
 // Mesma normalização da API: só dígitos, tira um 0 inicial, aceita 55 e 0 antes do DDD,
 // e acrescenta o 9 em celular de 8 dígitos (fixo começa com 2 a 5 e fica com 8).
+/**
+ * @param {unknown} raw
+ * @returns {{ phone: string, addedNine: boolean } | null}
+ */
 export function normalizePhone(raw) {
     let digits = String(raw).replace(/\D/g, '');
     if (digits.startsWith('0')) digits = digits.substring(1);
@@ -25,9 +38,14 @@ export function normalizePhone(raw) {
     return { phone: `${ddd}${addedNine ? '9' : ''}${firstPart}${secondPart}`, addedNine };
 }
 
+/**
+ * @param {CustomerPayload} payload
+ * @returns {Issue[]}
+ */
 function checkPhone(payload) {
     const normalized = normalizePhone(payload.phone);
     if (!normalized) return [error('phone', `a API responde 422 "Phone invalid": "${payload.phone}" não vira DDD + 8 ou 9 dígitos`)];
+    /** @type {Issue[]} */
     const issues = [];
     const raw = payload.phone.trim();
     const digits = raw.replace(/\D/g, '');
@@ -44,12 +62,20 @@ function checkPhone(payload) {
     return issues;
 }
 
+/**
+ * @param {CustomerPayload} payload
+ * @returns {Issue[]}
+ */
 function checkEmail(payload) {
     if (payload.email === undefined || payload.email === null || payload.email === '') return [];
     if (typeof payload.email === 'string' && EMAIL.test(payload.email)) return [];
     return [warning('email', `a API não valida e-mail e grava como veio: ${JSON.stringify(payload.email)}`)];
 }
 
+/**
+ * @param {CustomerPayload} payload
+ * @returns {Issue[]}
+ */
 function checkBirthDate(payload) {
     const value = payload.birthDate;
     if (value === undefined || value === null) return [];
@@ -63,6 +89,10 @@ function checkBirthDate(payload) {
     return [];
 }
 
+/**
+ * @param {CustomerPayload} payload
+ * @returns {Issue[]}
+ */
 function checkGender(payload) {
     const value = payload.gender;
     if (value === undefined || value === null || value === '') return [];
@@ -70,12 +100,21 @@ function checkGender(payload) {
     return [warning('gender', `a API aceita qualquer texto e grava em maiúsculas ("${value.toUpperCase()}"); os valores documentados são m e f`)];
 }
 
+/**
+ * @param {CustomerPayload} payload
+ * @returns {Issue[]}
+ */
 function checkNames(payload) {
-    return ['firstName', 'lastName'].filter((field) => payload[field].trim() === '').map((field) => warning(field, 'a API aceita e grava o nome vazio'));
+    return /** @type {Array<'firstName' | 'lastName'>} */ (['firstName', 'lastName']).filter((field) => payload[field].trim() === '').map((field) => warning(field, 'a API aceita e grava o nome vazio'));
 }
 
+/**
+ * @param {CustomerPayload} payload
+ * @returns {Issue[]}
+ */
 export function checkAddressTypes(payload) {
     const address = payload.address;
+    /** @type {Issue[]} */
     const issues = [];
     for (const field of ADDRESS_TEXT_FIELDS) {
         const value = address[field];
@@ -88,27 +127,47 @@ export function checkAddressTypes(payload) {
     return issues;
 }
 
+/**
+ * @param {CustomerPayload} payload
+ * @returns {Issue[]}
+ */
 function checkAddressOnCreate(payload) {
     const address = payload.address;
     return ADDRESS_EXPECTED_FIELDS.filter((field) => address[field] === undefined || address[field] === null || address[field] === '').map((field) => warning(`address.${field}`, 'a API aceita sem este campo e grava o endereço incompleto'));
 }
 
+/**
+ * @param {CustomerPayload} payload
+ * @returns {Issue[]}
+ */
 function checkUnknownFields(payload) {
     return Object.keys(payload)
         .filter((field) => !KNOWN_FIELDS.includes(field))
         .map((field) => warning(field, 'a API ignora este campo: não é gravado nem devolvido'));
 }
 
+/**
+ * @param {CustomerPayload} payload
+ * @returns {Issue[]}
+ */
 export function commonRules(payload) {
     return [...checkPhone(payload), ...checkEmail(payload), ...checkBirthDate(payload), ...checkGender(payload), ...checkNames(payload), ...checkAddressTypes(payload), ...checkUnknownFields(payload)];
 }
 
+/**
+ * @param {CustomerPayload} payload
+ * @returns {Issue[]}
+ */
 function checkCoordinatesOnCreate(payload) {
     return ['latitude', 'longitude']
         .filter((field) => payload.address[field] !== undefined)
         .map((field) => warning(`address.${field}`, 'ignorado no POST; para gravar, mande de novo num PUT /customers/{id}'));
 }
 
+/**
+ * @param {CustomerPayload} payload
+ * @returns {Issue[]}
+ */
 export default function rules(payload) {
     return [...commonRules(payload), ...checkAddressOnCreate(payload), ...checkCoordinatesOnCreate(payload)];
 }

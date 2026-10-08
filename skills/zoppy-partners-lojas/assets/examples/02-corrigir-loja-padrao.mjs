@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Exemplo: corrigir em lote os pedidos que caíram na loja padrão "Integrador Externo".
 // Lista os pedidos do período, separa os da loja padrão, lê cada um e reenvia o pedido INTEIRO por PUT
 // com o storeId certo, conferindo que só a loja mudou.
@@ -12,12 +13,17 @@ if (missing.length) {
 const BASE_URL = process.env.ZOPPY_PARTNERS_BASE_URL;
 const DEFAULT_STORE_NAME = 'Integrador Externo';
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function request(method, path, body) {
     const response = await fetch(`${BASE_URL}${path}`, {
         method,
         headers: {
             Authorization: `Bearer ${process.env.ZOPPY_PARTNERS_TOKEN}`,
-            'zoppy-access': process.env.ZOPPY_ACCESS,
+            'zoppy-access': /** @type {string} */ (process.env.ZOPPY_ACCESS),
             'Content-Type': 'application/json'
         },
         body: body === undefined ? undefined : JSON.stringify(body)
@@ -26,17 +32,29 @@ async function request(method, path, body) {
     return { status: response.status, data: text ? JSON.parse(text) : null, text };
 }
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function zoppy(method, path, body) {
     const { status, data, text } = await request(method, path, body);
     if (status < 200 || status >= 300) throw new Error(`${method} ${path} respondeu ${status}: ${text}`);
     return data;
 }
 
+/**
+ * @param {string} label
+ * @param {unknown} actual
+ * @param {unknown} expected
+ */
 function expectEqual(label, actual, expected) {
     if (actual !== expected) throw new Error(`${label}: esperado ${JSON.stringify(expected)}, veio ${JSON.stringify(actual)}`);
 }
 
+/** @type {(value: number) => number} */
 const cents = (value) => Math.round(value * 100);
+/** @type {(ms: number) => Promise<void>} */
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function freeTestPhone() {
@@ -49,6 +67,7 @@ async function freeTestPhone() {
     throw new Error('não achei telefone de teste livre');
 }
 
+/** @param {string} path */
 async function listAll(path) {
     const items = [];
     let page = 1;
@@ -62,9 +81,30 @@ async function listAll(path) {
     return items;
 }
 
+/**
+ * Pedido como a API devolve na leitura (só os campos usados aqui).
+ * @typedef {object} Order
+ * @property {string} status
+ * @property {number} subtotal
+ * @property {number} discount
+ * @property {number} shipping
+ * @property {number} total
+ * @property {string} createdAt
+ * @property {string | null} [completedAt]
+ * @property {string | null} [couponCode]
+ * @property {string | null} [userId]
+ * @property {string | null} [provider]
+ * @property {Array<{ productId: string, quantity: number }>} lineItems
+ */
+
 // O PUT é reenvio completo: monta o corpo a partir da leitura, trocando só a loja.
 // Sem couponCode (ausente mantém o cupom), sem vendedor e sem provider (ausentes, mantêm).
+/**
+ * @param {Order} order
+ * @param {string} storeId
+ */
 function buildStoreFix(order, storeId) {
+    /** @type {Omit<Order, 'total' | 'completedAt' | 'couponCode' | 'userId' | 'provider'> & { storeId: string, completedAt?: string }} */
     const body = {
         status: order.status,
         subtotal: order.subtotal,
@@ -78,11 +118,16 @@ function buildStoreFix(order, storeId) {
     return body;
 }
 
+/** @param {Order} order */
 function snapshot(order) {
     const items = order.lineItems.map((item) => `${item.productId}x${item.quantity}`).sort().join(',');
     return { total: cents(order.total), status: order.status, createdAt: order.createdAt, completedAt: order.completedAt, couponCode: order.couponCode, userId: order.userId, provider: order.provider, items };
 }
 
+/**
+ * @param {string} orderId
+ * @param {string} storeId
+ */
 async function fixOrderStore(orderId, storeId) {
     const before = await zoppy('GET', `/orders/${orderId}`);
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -97,6 +142,7 @@ async function fixOrderStore(orderId, storeId) {
 }
 
 const runId = `skills-test-zoppy-partners-lojas-${Date.now()}`;
+/** @type {{ orders: string[], storeId?: string, customerId?: string, productId?: string }} */
 const created = { orders: [] };
 
 async function main() {
@@ -146,6 +192,7 @@ async function main() {
     expectEqual('pedidos na loja padrão', toFix.length, 1);
 
     // 3. Corrige um por um, com a filial que o seu sistema diz para cada externalId.
+    /** @type {(externalId: string) => string} */
     const branchOf = (externalId) => branchByExternalId.get(externalId);
     const report = [];
     for (const order of toFix) report.push(await fixOrderStore(order.id, branchOf(order.externalId)));
@@ -172,7 +219,7 @@ async function cleanup() {
 try {
     await main();
 } catch (cause) {
-    console.error(cause.message);
+    console.error(/** @type {Error} */ (cause).message);
     process.exitCode = 1;
 } finally {
     await cleanup();

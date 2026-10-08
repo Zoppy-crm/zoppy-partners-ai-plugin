@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Roda os exemplos das skills contra uma conta da Partners API.
 // Use uma conta de teste sem fluxos de mensagem ativos: pedidos e carrinhos disparam os fluxos da conta.
 // Contra a URL de produção, só roda com ZOPPY_SMOKE_ALLOW_PRODUCTION=1.
@@ -9,35 +10,61 @@ import { spawnSync } from 'node:child_process';
 const REQUIRED_ENV = ['ZOPPY_PARTNERS_TOKEN', 'ZOPPY_ACCESS', 'ZOPPY_PARTNERS_BASE_URL'];
 const PRODUCTION_HOST = 'api-partners.zoppy.com.br';
 
+/**
+ * @param {string} skillDir
+ * @returns {string[]}
+ */
 function examplesOf(skillDir) {
     const dir = join(skillDir, 'assets', 'examples');
     if (!existsSync(dir)) return [];
     return readdirSync(dir).filter((name) => name.endsWith('.mjs') || name.endsWith('.curl.sh')).sort().map((name) => join(dir, name));
 }
 
+/**
+ * @param {string} file
+ * @returns {import('node:child_process').SpawnSyncReturns<string>}
+ */
 function runExample(file) {
+    /** @type {[string, string[]]} */
     const [command, args] = file.endsWith('.mjs') ? ['node', [file]] : ['bash', [file]];
     return spawnSync(command, args, { encoding: 'utf8', env: process.env, timeout: 120_000 });
 }
 
+/**
+ * @param {string} root
+ * @param {string | undefined} only
+ * @returns {string[]}
+ */
 function selectedSkills(root, only) {
     const skills = join(root, 'skills');
     if (!existsSync(skills)) return [];
     return readdirSync(skills).filter((name) => !only || name === only).sort().map((name) => join(skills, name));
 }
 
+/**
+ * @param {string | undefined} url
+ * @returns {string}
+ */
 function hostOf(url) {
     try {
-        return new URL(url).hostname.toLowerCase();
+        return new URL(url ?? '').hostname.toLowerCase();
     } catch {
         return '';
     }
 }
 
+/**
+ * @param {NodeJS.ProcessEnv} env
+ * @returns {boolean}
+ */
 function isBlockedProduction(env) {
     return hostOf(env.ZOPPY_PARTNERS_BASE_URL) === PRODUCTION_HOST && env.ZOPPY_SMOKE_ALLOW_PRODUCTION !== '1';
 }
 
+/**
+ * @param {string[]} argv
+ * @returns {void}
+ */
 function main(argv) {
     const missing = REQUIRED_ENV.filter((name) => !process.env[name]);
     if (missing.length) {

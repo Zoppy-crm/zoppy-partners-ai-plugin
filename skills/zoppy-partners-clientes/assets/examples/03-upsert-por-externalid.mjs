@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Exemplo: sincronizar cliente sem duplicar (upsert por externalId, tratando telefone já cadastrado).
 // Requer ZOPPY_PARTNERS_TOKEN, ZOPPY_ACCESS e ZOPPY_PARTNERS_BASE_URL.
 const missing = ['ZOPPY_PARTNERS_TOKEN', 'ZOPPY_ACCESS', 'ZOPPY_PARTNERS_BASE_URL'].filter((name) => !process.env[name]);
@@ -9,12 +10,17 @@ if (missing.length) {
 
 const BASE_URL = process.env.ZOPPY_PARTNERS_BASE_URL;
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function request(method, path, body) {
     const response = await fetch(`${BASE_URL}${path}`, {
         method,
         headers: {
             Authorization: `Bearer ${process.env.ZOPPY_PARTNERS_TOKEN}`,
-            'zoppy-access': process.env.ZOPPY_ACCESS,
+            'zoppy-access': /** @type {string} */ (process.env.ZOPPY_ACCESS),
             'Content-Type': 'application/json'
         },
         body: body === undefined ? undefined : JSON.stringify(body)
@@ -23,12 +29,22 @@ async function request(method, path, body) {
     return { status: response.status, data: text ? JSON.parse(text) : null, text };
 }
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function zoppy(method, path, body) {
     const { status, data, text } = await request(method, path, body);
     if (status < 200 || status >= 300) throw new Error(`${method} ${path} respondeu ${status}: ${text}`);
     return data;
 }
 
+/**
+ * @param {string} label
+ * @param {unknown} actual
+ * @param {unknown} expected
+ */
 function expectEqual(label, actual, expected) {
     if (actual !== expected) throw new Error(`${label}: esperado ${JSON.stringify(expected)}, veio ${JSON.stringify(actual)}`);
 }
@@ -39,14 +55,25 @@ function expectEqual(label, actual, expected) {
 // 3. Se o POST devolver outro externalId ou outro endereço, o telefone já era de um cadastro
 //    existente e o POST não gravou o que você mandou. Faça PUT nesse id para atualizar e ligar o seu externalId.
 //    Atenção: esse PUT substitui o externalId do cadastro antigo.
+/** @type {(value: unknown) => string} */
 const digits = (value) => String(value ?? '').replace(/\D/g, '');
 
+/**
+ * @typedef {{ externalId: string, phone: string, firstName: string, lastName: string, address: Record<string, string> }} CustomerPayload
+ */
+
+/**
+ * @param {Record<string, unknown> | null | undefined} saved
+ * @param {Record<string, string>} sent
+ * @returns {boolean}
+ */
 function sameAddress(saved, sent) {
     if (!saved) return false;
     const textEqual = ['address1', 'city', 'state'].every((field) => (saved[field] ?? '') === (sent[field] ?? ''));
     return textEqual && digits(saved.postcode) === digits(sent.postcode);
 }
 
+/** @param {CustomerPayload} payload */
 async function upsertCustomer(payload) {
     const existing = await request('GET', `/customers/external/${encodeURIComponent(payload.externalId)}`);
     if (existing.status === 200) return zoppy('PUT', `/customers/${existing.data.id}`, payload);
@@ -69,6 +96,7 @@ async function freeTestPhone() {
 const runId = `skills-test-zoppy-partners-clientes-${Date.now()}`;
 const phone = await freeTestPhone();
 const address = { address1: 'Rua C, 30', city: 'Curitiba', state: 'PR', postcode: '80010-000' };
+/** @type {string[]} */
 const created = [];
 
 try {

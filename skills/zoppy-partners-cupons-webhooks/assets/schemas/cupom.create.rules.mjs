@@ -1,7 +1,16 @@
+// @ts-check
 import { amountRules, defaultsRules, externalIdRules, issue, onlyDigits } from './cupom-regras.mjs';
+
+/** @typedef {import('../../scripts/validate.mjs').Issue} Issue */
+/** @typedef {import('./cupom-regras.mjs').CouponPayload & { phone: string | number, awaitingOrder?: boolean, description?: string }} IndividualCouponPayload */
 
 const BR_PHONE = /^(?:55)?(?:0?(\d{2}))(\d{4,5})(\d{4})$/;
 
+/**
+ * @param {IndividualCouponPayload} payload
+ * @param {string} digits
+ * @returns {Issue[]}
+ */
 function phoneFormatRules(payload, digits) {
     if (typeof payload.phone === 'number') return [issue('warning', 'phone', 'telefone como número JSON é aceito e gravado com os dígitos, mas mande texto, ex. "11987654321"')];
     if (digits !== payload.phone) return [issue('warning', 'phone', 'o telefone é gravado como veio, com a formatação; GET e PUT por /phone/{phone} só acham o cupom com o mesmo texto. Prefira só dígitos, ex. 11987654321')];
@@ -10,6 +19,10 @@ function phoneFormatRules(payload, digits) {
 
 // Mesma leitura do validador de cliente: celular de 8 dígitos (fixo começa com 2 a 5) ganha o 9
 // no cadastro do cliente, mas o cupom grava o telefone como chega.
+/**
+ * @param {string} digits
+ * @returns {Issue[]}
+ */
 function missingNineRules(digits) {
     const match = digits.replace(/^0/, '').match(BR_PHONE);
     if (!match) return [];
@@ -19,13 +32,22 @@ function missingNineRules(digits) {
     return [issue('warning', 'phone', `celular com 8 dígitos: no cadastro do cliente a API acrescenta o 9 e grava ${customerPhone}, mas o cupom fica com o telefone como veio e não aparece nas buscas pelo telefone do cliente. Mande o telefone que a Zoppy devolveu no cadastro do cliente (customer.phone)`)];
 }
 
+/**
+ * @param {IndividualCouponPayload} payload
+ * @returns {Issue[]}
+ */
 function phoneRules(payload) {
     const digits = onlyDigits(payload.phone);
     if (digits.length < 10) return [issue('error', 'phone', `telefone com ${digits.length} dígito(s); a API responde 422 "O número de celular do cupom é invalido." (mínimo 10 dígitos)`)];
     return [...phoneFormatRules(payload, digits), ...missingNineRules(digits)];
 }
 
+/**
+ * @param {IndividualCouponPayload} payload
+ * @returns {Issue[]}
+ */
 function individualRules(payload) {
+    /** @type {Issue[]} */
     const issues = [];
     if (typeof payload.externalId === 'string' && payload.externalId.length > 255) {
         issues.push(issue('error', 'externalId', `externalId com ${payload.externalId.length} caracteres: a API corta em 255 sem avisar e a busca pelo valor inteiro não acha o cupom`));
@@ -39,6 +61,10 @@ function individualRules(payload) {
     return issues;
 }
 
+/**
+ * @param {IndividualCouponPayload} payload
+ * @returns {Issue[]}
+ */
 export default function rules(payload) {
     return [...externalIdRules(payload), ...amountRules(payload), ...phoneRules(payload), ...defaultsRules(payload), ...individualRules(payload)];
 }

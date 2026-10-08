@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Exemplo: listar os webhooks cadastrados e ler a configuração de cupom (giftback) da conta. Só leitura.
 // Requer ZOPPY_PARTNERS_TOKEN, ZOPPY_ACCESS e ZOPPY_PARTNERS_BASE_URL.
 const missing = ['ZOPPY_PARTNERS_TOKEN', 'ZOPPY_ACCESS', 'ZOPPY_PARTNERS_BASE_URL'].filter((name) => !process.env[name]);
@@ -9,10 +10,14 @@ if (missing.length) {
 
 const BASE_URL = process.env.ZOPPY_PARTNERS_BASE_URL;
 
+/**
+ * @param {string} method
+ * @param {string} path
+ */
 async function zoppy(method, path) {
     const response = await fetch(`${BASE_URL}${path}`, {
         method,
-        headers: { Authorization: `Bearer ${process.env.ZOPPY_PARTNERS_TOKEN}`, 'zoppy-access': process.env.ZOPPY_ACCESS }
+        headers: { Authorization: `Bearer ${process.env.ZOPPY_PARTNERS_TOKEN}`, 'zoppy-access': /** @type {string} */ (process.env.ZOPPY_ACCESS) }
     });
     const text = await response.text();
     if (!response.ok) throw new Error(`${method} ${path} respondeu ${response.status}: ${text}`);

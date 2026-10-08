@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Exemplo: cadastrar as filiais sem duplicar. Reaproveita sozinho só o mapa salvo da própria integração;
 // loja existente com o mesmo código ou nome vira lista "a confirmar" com o usuário, e nada é criado antes
 // disso. Depois manda um pedido por filial por storeId e confere a loja gravada na leitura.
@@ -11,12 +12,17 @@ if (missing.length) {
 
 const BASE_URL = process.env.ZOPPY_PARTNERS_BASE_URL;
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function request(method, path, body) {
     const response = await fetch(`${BASE_URL}${path}`, {
         method,
         headers: {
             Authorization: `Bearer ${process.env.ZOPPY_PARTNERS_TOKEN}`,
-            'zoppy-access': process.env.ZOPPY_ACCESS,
+            'zoppy-access': /** @type {string} */ (process.env.ZOPPY_ACCESS),
             'Content-Type': 'application/json'
         },
         body: body === undefined ? undefined : JSON.stringify(body)
@@ -25,12 +31,22 @@ async function request(method, path, body) {
     return { status: response.status, data: text ? JSON.parse(text) : null, text };
 }
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function zoppy(method, path, body) {
     const { status, data, text } = await request(method, path, body);
     if (status < 200 || status >= 300) throw new Error(`${method} ${path} respondeu ${status}: ${text}`);
     return data;
 }
 
+/**
+ * @param {string} label
+ * @param {unknown} actual
+ * @param {unknown} expected
+ */
 function expectEqual(label, actual, expected) {
     if (actual !== expected) throw new Error(`${label}: esperado ${JSON.stringify(expected)}, veio ${JSON.stringify(actual)}`);
 }
@@ -45,8 +61,15 @@ async function freeTestPhone() {
     throw new Error('não achei telefone de teste livre');
 }
 
+/**
+ * @typedef {{ code: string, name: string }} Branch
+ * @typedef {{ id: string, externalId: string | null, name: string }} Store
+ */
+
 // Todas as lojas ativas da conta, de todas as páginas (inclusive as criadas por outras integrações).
+/** @returns {Promise<Store[]>} */
 async function listAllStores() {
+    /** @type {Store[]} */
     const stores = [];
     let page = 1;
     let totalPages = 1;
@@ -60,17 +83,25 @@ async function listAllStores() {
 }
 
 // Compara como a API: sem diferenciar maiúsculas e acentos (espaços contam).
+/** @type {(text: string | null | undefined) => string} */
 const fold = (text) => (text ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
 // savedMap: filial -> storeId que a SUA integração já guardou (ou que o usuário confirmou).
 // Reaproveita sozinho só o que está nesse mapa. Loja existente com o mesmo código ou o mesmo nome
 // de uma filial fora do mapa vai para `toConfirm` e nada é criado: códigos de sistemas diferentes são
 // independentes, e só o usuário sabe se é a mesma filial. Sem candidata, a filial é criada.
+/**
+ * @param {Branch[]} branches
+ * @param {Record<string, string>} [savedMap]
+ */
 async function syncBranches(branches, savedMap = {}) {
     const stores = await listAllStores();
     const activeIds = new Set(stores.map((store) => store.id));
+    /** @type {Record<string, string>} */
     const result = {};
+    /** @type {Array<{ branch: Branch, candidates: Store[] }>} */
     const toConfirm = [];
+    /** @type {Branch[]} */
     const toCreate = [];
     for (const branch of branches) {
         const saved = savedMap[branch.code];
@@ -83,6 +114,7 @@ async function syncBranches(branches, savedMap = {}) {
         else toCreate.push(branch);
     }
     if (toConfirm.length) return { toConfirm, map: null, created: [] };
+    /** @type {string[]} */
     const created = [];
     for (const branch of toCreate) {
         const store = await zoppy('POST', '/stores', { externalId: branch.code, name: branch.name, isEcommerce: false });
@@ -93,6 +125,7 @@ async function syncBranches(branches, savedMap = {}) {
 }
 
 const runId = `skills-test-zoppy-partners-lojas-${Date.now()}`;
+/** @type {{ stores: Set<string>, orders: string[], customerId?: string }} */
 const created = { stores: new Set(), orders: [] };
 
 async function main() {
@@ -119,7 +152,8 @@ async function main() {
     const second = await syncBranches(branches, confirmed);
     second.created.forEach((id) => created.stores.add(id));
     expectEqual('só a filial 03 criada', second.created.length, 1);
-    const savedMap = second.map;
+    // A segunda rodada não tem filial a confirmar, então devolve o mapa.
+    const savedMap = /** @type {Record<string, string>} */ (second.map);
 
     // 4. Rodar de novo com o mapa salvo não cria nada.
     const third = await syncBranches(branches, savedMap);
@@ -170,7 +204,7 @@ async function cleanup() {
 try {
     await main();
 } catch (cause) {
-    console.error(cause.message);
+    console.error(/** @type {Error} */ (cause).message);
     process.exitCode = 1;
 } finally {
     await cleanup();

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Exemplo: autenticar, listar uma página de clientes, conferir o formato paginado e percorrer
 // todas as páginas sem duplicar. Só lê dados. Requer ZOPPY_PARTNERS_TOKEN, ZOPPY_ACCESS e
 // ZOPPY_PARTNERS_BASE_URL.
@@ -10,12 +11,17 @@ if (missing.length) {
 
 const BASE_URL = process.env.ZOPPY_PARTNERS_BASE_URL;
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function zoppy(method, path, body) {
     const response = await fetch(`${BASE_URL}${path}`, {
         method,
         headers: {
             Authorization: `Bearer ${process.env.ZOPPY_PARTNERS_TOKEN}`,
-            'zoppy-access': process.env.ZOPPY_ACCESS,
+            'zoppy-access': /** @type {string} */ (process.env.ZOPPY_ACCESS),
             'Content-Type': 'application/json'
         },
         body: body === undefined ? undefined : JSON.stringify(body)
@@ -28,10 +34,26 @@ async function zoppy(method, path, body) {
     return data;
 }
 
+/**
+ * @param {string} label
+ * @param {unknown} condition
+ * @param {string} detail
+ */
 function expect(label, condition, detail) {
     if (!condition) throw new Error(`${label}: ${detail}`);
 }
 
+/**
+ * @typedef {{ page: number, pageSize: number, totalRecords: number, totalPages: number }} Pagination
+ * @typedef {{ pagination: Pagination, data: Array<{ id: unknown }> }} Page
+ */
+
+/**
+ * @param {string} label
+ * @param {Page} body
+ * @param {number} page
+ * @param {number} pageSize
+ */
 function checkPage(label, body, page, pageSize) {
     const pagination = body?.pagination;
     expect(label, pagination && Array.isArray(body.data), `esperado { pagination, data[] }, veio ${JSON.stringify(body).slice(0, 200)}`);
@@ -49,12 +71,13 @@ const AFTER = '2020-01-01T00:00:00-03:00';
 const PAGE_SIZE = 50;
 
 // 1. Uma página, conferindo o formato.
+/** @type {(page: number) => URLSearchParams} */
 const query = (page) => new URLSearchParams({ after: AFTER, page: String(page), pageSize: String(PAGE_SIZE) });
 const first = await zoppy('GET', `/customers?${query(1)}`);
 checkPage('página 1', first, 1, PAGE_SIZE);
 
 // 2. Todas as páginas, juntando por id (a ordem dos itens não é por data).
-const byId = new Map(first.data.map((customer) => [customer.id, customer]));
+const byId = new Map(first.data.map((/** @type {{ id: unknown }} */ customer) => [customer.id, customer]));
 for (let page = 2; page <= first.pagination.totalPages; page++) {
     const body = await zoppy('GET', `/customers?${query(page)}`);
     checkPage(`página ${page}`, body, page, PAGE_SIZE);

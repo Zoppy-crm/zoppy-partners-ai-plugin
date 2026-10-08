@@ -1,3 +1,8 @@
+// @ts-check
+/**
+ * @param {{ event: string, url: string, bearerToken?: string } & Record<string, unknown>} payload
+ * @returns {import('../../scripts/validate.mjs').Issue[]}
+ */
 export default function rules(payload) {
     if (typeof payload.url === 'string' && payload.url.length > 255) {
         return [{ level: 'error', field: 'url', message: `url com ${payload.url.length} caracteres: a API grava só os 255 primeiros, sem aviso` }];

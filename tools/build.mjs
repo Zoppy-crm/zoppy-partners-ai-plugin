@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Gera scripts/validate.mjs de cada skill e confere o formato das skills.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
@@ -12,15 +13,22 @@ const JWT = /eyJ[A-Za-z0-9_-]{20,}/;
 const DASHES = /[—–]/;
 const GENERATED_HEADER = '#!/usr/bin/env node\n// GERADO por tools/build.mjs a partir de tools/validate.mjs. Não edite este arquivo.\n';
 
+/** @returns {string} */
 export function generatedValidator() {
     const source = readFileSync(join(TOOLS_DIR, 'validate.mjs'), 'utf8');
     return GENERATED_HEADER + source.replace(/^#!.*\n/, '');
 }
 
+/**
+ * @param {string} text
+ * @returns {Record<string, string> | null}
+ */
 function parseFrontmatter(text) {
     const match = text.match(/^---\n([\s\S]*?)\n---\n/);
     if (!match) return null;
+    /** @type {Record<string, string>} */
     const keys = {};
+    /** @type {string | null} */
     let current = null;
     for (const line of match[1].split('\n')) {
         const top = line.match(/^([A-Za-z_][\w-]*):\s?(.*)$/);
@@ -34,10 +42,18 @@ function parseFrontmatter(text) {
     return keys;
 }
 
+/**
+ * @param {string} value
+ * @returns {string}
+ */
 function cleanScalar(value) {
     return value.replace(/^[>|]-?\s*/, '').replace(/^['"]|['"]$/g, '').trim();
 }
 
+/**
+ * @param {string} dir
+ * @returns {string[]}
+ */
 function filesUnder(dir) {
     if (!existsSync(dir)) return [];
     return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -46,10 +62,19 @@ function filesUnder(dir) {
     });
 }
 
+/**
+ * @param {string} raw
+ * @returns {boolean}
+ */
 function isPlainScalarWithColon(raw) {
     return !/^['"|>]/.test(raw) && raw.includes(': ');
 }
 
+/**
+ * @param {string} dir
+ * @param {Record<string, string> | null} keys
+ * @returns {string[]}
+ */
 function lintFrontmatter(dir, keys) {
     if (!keys) return ['SKILL.md sem frontmatter'];
     const problems = Object.keys(keys).filter((key) => !ALLOWED_KEYS.has(key)).map((key) => `campo "${key}" não é do padrão aberto (use só name, description, compatibility, metadata)`);
@@ -63,7 +88,12 @@ function lintFrontmatter(dir, keys) {
     return problems;
 }
 
+/**
+ * @param {string} dir
+ * @returns {string[]}
+ */
 function lintText(dir) {
+    /** @type {string[]} */
     const problems = [];
     const skillLines = readFileSync(join(dir, 'SKILL.md'), 'utf8').split('\n').length;
     if (skillLines >= 500) problems.push(`SKILL.md com ${skillLines} linhas (limite 499)`);
@@ -77,6 +107,10 @@ function lintText(dir) {
     return problems;
 }
 
+/**
+ * @param {string} dir
+ * @returns {string[]}
+ */
 function lintSecrets(dir) {
     const access = process.env.ZOPPY_ACCESS;
     return filesUnder(dir)
@@ -87,6 +121,10 @@ function lintSecrets(dir) {
         .map((file) => `${basename(file)}: possível segredo versionado`);
 }
 
+/**
+ * @param {string} dir
+ * @returns {string[]}
+ */
 function lintScripts(dir) {
     const scripts = [...filesUnder(join(dir, 'assets', 'examples')), ...filesUnder(join(dir, 'scripts'))].filter((file) => file.endsWith('.mjs'));
     return scripts.flatMap((file) => {
@@ -94,28 +132,45 @@ function lintScripts(dir) {
             execFileSync('node', ['--check', file], { stdio: 'pipe' });
             return [];
         } catch (cause) {
-            return [`${basename(file)}: não compila (${String(cause.stderr).split('\n')[0]})`];
+            return [`${basename(file)}: não compila (${String(/** @type {{ stderr: Buffer }} */ (cause).stderr).split('\n')[0]})`];
         }
     });
 }
 
+/**
+ * @param {string} dir
+ * @returns {string[]}
+ */
 export function lintSkill(dir) {
     const skillFile = join(dir, 'SKILL.md');
     if (!existsSync(skillFile)) return ['SKILL.md ausente'];
     return [...lintFrontmatter(dir, parseFrontmatter(readFileSync(skillFile, 'utf8'))), ...lintText(dir), ...lintSecrets(dir), ...lintScripts(dir)];
 }
 
+/**
+ * @param {string} root
+ * @returns {string[]}
+ */
 function skillDirs(root) {
     const skills = join(root, 'skills');
     if (!existsSync(skills)) return [];
     return readdirSync(skills, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => join(skills, entry.name));
 }
 
+/**
+ * @param {string} dir
+ * @returns {boolean}
+ */
 function hasSchemas(dir) {
     const schemas = join(dir, 'assets', 'schemas');
     return existsSync(schemas) && readdirSync(schemas).some((name) => name.endsWith('.json'));
 }
 
+/**
+ * @param {string} dir
+ * @param {boolean} check
+ * @returns {string[]}
+ */
 function removeValidator(dir, check) {
     const target = join(dir, 'scripts', 'validate.mjs');
     if (!existsSync(target)) return [];
@@ -125,6 +180,11 @@ function removeValidator(dir, check) {
     return [];
 }
 
+/**
+ * @param {string} dir
+ * @param {boolean} check
+ * @returns {string[]}
+ */
 function syncValidator(dir, check) {
     if (!hasSchemas(dir)) return removeValidator(dir, check);
     const target = join(dir, 'scripts', 'validate.mjs');
@@ -135,6 +195,10 @@ function syncValidator(dir, check) {
     return [];
 }
 
+/**
+ * @param {string[]} argv
+ * @returns {void}
+ */
 function main(argv) {
     const check = argv.includes('--check');
     const root = process.cwd();

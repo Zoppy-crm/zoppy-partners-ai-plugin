@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Exemplo: cadastrar na Zoppy um cupom individual que você já criou no seu sistema, ler de volta e excluir.
 // Pré-requisito: um cliente com o mesmo telefone (é ele que aparece em "customer" na consulta).
 // Requer ZOPPY_PARTNERS_TOKEN, ZOPPY_ACCESS e ZOPPY_PARTNERS_BASE_URL.
@@ -10,12 +11,17 @@ if (missing.length) {
 
 const BASE_URL = process.env.ZOPPY_PARTNERS_BASE_URL;
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function request(method, path, body) {
     const response = await fetch(`${BASE_URL}${path}`, {
         method,
         headers: {
             Authorization: `Bearer ${process.env.ZOPPY_PARTNERS_TOKEN}`,
-            'zoppy-access': process.env.ZOPPY_ACCESS,
+            'zoppy-access': /** @type {string} */ (process.env.ZOPPY_ACCESS),
             'Content-Type': 'application/json'
         },
         body: body === undefined ? undefined : JSON.stringify(body)
@@ -24,12 +30,22 @@ async function request(method, path, body) {
     return { status: response.status, data: text ? JSON.parse(text) : null, text };
 }
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function zoppy(method, path, body) {
     const { status, data, text } = await request(method, path, body);
     if (status < 200 || status > 299) throw new Error(`${method} ${path} respondeu ${status}: ${text}`);
     return data;
 }
 
+/**
+ * @param {string} label
+ * @param {unknown} actual
+ * @param {unknown} expected
+ */
 function expectEqual(label, actual, expected) {
     if (actual !== expected) throw new Error(`${label}: esperado ${JSON.stringify(expected)}, veio ${JSON.stringify(actual)}`);
 }
@@ -46,7 +62,9 @@ async function freePhone() {
 
 const runId = `skills-test-zoppy-partners-cupons-webhooks-${Date.now()}`;
 const code = `SKTCW${Date.now()}`;
+/** @type {string | undefined} */
 let customerId;
+/** @type {string | undefined} */
 let couponId;
 
 try {

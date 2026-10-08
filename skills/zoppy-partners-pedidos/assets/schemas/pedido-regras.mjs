@@ -1,3 +1,4 @@
+// @ts-check
 // Regras de negócio de pedido (POST /orders e PUT /orders/{id}), provadas contra a Partners API.
 // Erro: a API aceita (200) mas grava um valor errado. Aviso: a API aceita e grava algo que
 // o integrador costuma não esperar.
@@ -8,16 +9,50 @@ const KNOWN_FIELDS = [
 ];
 const UPDATE_IGNORED = ['externalId', 'customerId'];
 
+/** @typedef {import('../../scripts/validate.mjs').Issue} Issue */
+/** @typedef {'create' | 'update'} Mode */
+/** @typedef {{ name?: string, externalId?: string } & Record<string, unknown>} OrderStore */
+/** @typedef {{ productId: string, quantity: number } & Record<string, unknown>} OrderLineItem */
+/**
+ * Payload de pedido que já passou pelo schema; campos fora do schema também chegam aqui.
+ * @typedef {{
+ *     externalId?: string,
+ *     customerId?: string,
+ *     couponCode?: string,
+ *     storeId?: string,
+ *     store?: OrderStore,
+ *     status: string,
+ *     subtotal: number,
+ *     discount?: number,
+ *     shipping?: number,
+ *     lineItems?: OrderLineItem[],
+ *     createdAt?: string,
+ *     completedAt?: string,
+ *     updatedAt?: string
+ * } & Record<string, unknown>} OrderPayload
+ */
+
+/** @type {(field: string, message: string) => Issue} */
 const warning = (field, message) => ({ level: 'warning', field, message });
+/** @type {(field: string, message: string) => Issue} */
 const error = (field, message) => ({ level: 'error', field, message });
+/** @type {(value: number) => number} */
 const money = (value) => Number(value.toFixed(2));
 
+/**
+ * @param {OrderPayload} payload
+ * @returns {Issue[]}
+ */
 function checkMissingValues(payload) {
     return ['discount', 'shipping']
         .filter((field) => payload[field] === undefined)
         .map((field) => error(field, `ausente: a API grava total 0 em vez de subtotal - discount - shipping. Envie ${field}: 0 quando não houver`));
 }
 
+/**
+ * @param {OrderPayload} payload
+ * @returns {Issue[]}
+ */
 function checkTotal(payload) {
     const { subtotal, discount, shipping } = payload;
     if (discount === undefined || shipping === undefined) return [];
@@ -34,13 +69,24 @@ function checkTotal(payload) {
     return [];
 }
 
+/**
+ * @param {OrderPayload} payload
+ * @param {Mode} mode
+ * @returns {Issue[]}
+ */
 function checkStatus(payload, mode) {
     if (payload.status !== 'processing') return [];
     const effect = mode === 'create' ? 'no POST a API grava on-hold' : 'no PUT a API grava processing como veio';
     return [warning('status', `processing: ${effect}. Use on-hold para aguardando pagamento e completed para pago ou confirmado`)];
 }
 
+/**
+ * @param {OrderPayload} payload
+ * @param {Mode} mode
+ * @returns {Issue[]}
+ */
 function checkDates(payload, mode) {
+    /** @type {Issue[]} */
     const issues = [];
     if (payload.createdAt === undefined && payload.completedAt !== undefined) {
         const effect = mode === 'create' ? 'a data do pedido vira a do completedAt' : 'o PUT troca a data do pedido pela do completedAt';
@@ -60,8 +106,13 @@ function checkDates(payload, mode) {
     return issues;
 }
 
+/** @type {(value: unknown) => boolean} */
 const filled = (value) => typeof value === 'string' && value !== '';
 
+/**
+ * @param {OrderStore | undefined} store
+ * @returns {Issue[]}
+ */
 function checkEmptyStoreFields(store) {
     if (!store || typeof store !== 'object') return [];
     return ['externalId', 'name']
@@ -69,6 +120,11 @@ function checkEmptyStoreFields(store) {
         .map((field) => error(`store.${field}`, `texto vazio não é ignorado: casa com uma loja de ${field === 'name' ? 'nome' : 'código'} vazio, se a conta tiver, e ganha do outro campo. Omita o campo`));
 }
 
+/**
+ * @param {OrderPayload} payload
+ * @param {Mode} mode
+ * @returns {Issue[]}
+ */
 function checkEmptyStoreId(payload, mode) {
     if (payload.storeId !== '') return [];
     const store = payload.store;
@@ -77,6 +133,11 @@ function checkEmptyStoreId(payload, mode) {
     return [error('storeId', 'vazio: no POST, sem store, o pedido vai para a loja padrão "Integrador Externo". Envie o id da loja ou omita o campo')];
 }
 
+/**
+ * @param {OrderPayload} payload
+ * @param {Mode} mode
+ * @returns {Issue[]}
+ */
 function checkStore(payload, mode) {
     const store = payload.store;
     const issues = [...checkEmptyStoreId(payload, mode), ...checkEmptyStoreFields(store)];
@@ -96,18 +157,33 @@ function checkStore(payload, mode) {
     return [...issues, warning('store', `só store.name: prefira storeId. O nome precisa bater com espaços (maiúsculas e acentos não importam), com duas lojas de mesmo nome o pedido vai para uma delas sem garantia de qual, e nome sem correspondência ${effect} sem erro`)];
 }
 
+/**
+ * @param {OrderPayload} payload
+ * @param {Mode} mode
+ * @returns {Issue[]}
+ */
 function checkCouponOnUpdate(payload, mode) {
     if (mode !== 'update' || payload.couponCode === undefined) return [];
     if (payload.couponCode === '') return [warning('couponCode', 'vazio: o PUT apaga o cupom gravado no pedido. Para manter o cupom, omita o campo')];
     return [warning('couponCode', 'no PUT o cupom precisa existir na Zoppy, senão 422 Coupon code not found e nada é gravado (cupom do seu sistema ou giftback já excluído). Se não tiver certeza, omita o campo: ausente mantém o cupom gravado')];
 }
 
+/**
+ * @param {OrderPayload} payload
+ * @returns {Issue[]}
+ */
 function checkCoupon(payload) {
     if (!payload.couponCode || payload.discount !== 0) return [];
     return [warning('discount', 'couponCode com discount 0: se o cupom existir na Zoppy, ela preenche o discount com o valor do cupom e o subtotal lido de volta aumenta. Envie o desconto real')];
 }
 
+/**
+ * @param {OrderPayload} payload
+ * @param {Mode} mode
+ * @returns {Issue[]}
+ */
 function checkLineItems(payload, mode) {
+    /** @type {Issue[]} */
     const issues = [];
     (payload.lineItems ?? []).forEach((item, index) => {
         if (!Number.isInteger(item.quantity)) issues.push(warning(`lineItems[${index}].quantity`, `${item.quantity} não é inteiro: a API arredonda`));
@@ -118,7 +194,13 @@ function checkLineItems(payload, mode) {
     return issues;
 }
 
+/**
+ * @param {OrderPayload} payload
+ * @param {Mode} mode
+ * @returns {Issue[]}
+ */
 function checkIgnoredFields(payload, mode) {
+    /** @type {Issue[]} */
     const issues = [];
     if (payload.total !== undefined) issues.push(warning('total', 'a API ignora total e calcula subtotal - discount - shipping'));
     if (payload.items !== undefined) issues.push(warning('items', 'a API ignora items; os itens vão em lineItems'));
@@ -133,6 +215,11 @@ function checkIgnoredFields(payload, mode) {
     return issues;
 }
 
+/**
+ * @param {OrderPayload} payload
+ * @param {Mode} mode
+ * @returns {Issue[]}
+ */
 export function orderRules(payload, mode) {
     return [
         ...checkMissingValues(payload),
