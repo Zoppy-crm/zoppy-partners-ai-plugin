@@ -5,6 +5,12 @@ description: "Cadastra e mantém produtos na Partners API da Zoppy (POST, GET, P
 
 # Produtos na Partners API da Zoppy
 
+**Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
+1. Antes de entregar código ou de chamar a API, rode você mesmo, no terminal, `node <pasta desta skill>/scripts/validate.mjs --schema=produto.create` (ou `produto.update`) em cada corpo, também os que um script vai montar, e leia cada `ERRO` e `AVISO`. Não deixe essa etapa para o usuário.
+2. Em teste, `externalId` e `name` levam o prefixo do usuário inteiro, sem abreviar.
+3. Nunca invente dado que o usuário não deu (categoria, `provider`, `specification`): pergunte, ou deixe o campo de fora e avise.
+4. Depois de todo `POST` ou `PUT`, releia com `GET /products/{id}` e compare `price` e `categories` com o que mandou.
+
 ## Antes de gerar código
 
 1. Autenticação, base URL e formato de erro estão na skill **zoppy-partners-api**. Toda chamada leva
@@ -108,7 +114,13 @@ GET /products/external/{externalId}
          se o externalId da resposta for diferente do seu, o nome colidiu com outro produto:
          não guarde esse id; torne o nome único (ou atualize aquele produto com PUT, se for o mesmo item)
   200 -> PUT  /products/{id da resposta} com o corpo completo
+depois do POST ou do PUT -> GET /products/{id}
+         compare price (o valor que o validador diz que será gravado) e categories com o enviado;
+         se categories divergir, reenvie com PUT
 ```
+
+A resposta do POST e do PUT ecoa o preço que você mandou; só o `GET` mostra o preço gravado (regra 4).
+No PUT, campo omitido também some da resposta (regra 3).
 
 ### 3. PUT substitui: mande o corpo completo
 

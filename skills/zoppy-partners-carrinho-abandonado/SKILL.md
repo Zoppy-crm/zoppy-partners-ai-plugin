@@ -5,6 +5,12 @@ description: "Envia, atualiza, busca, lista e exclui carrinhos abandonados na Pa
 
 # Carrinho abandonado na Partners API da Zoppy
 
+**Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
+1. Antes de entregar código ou de chamar a API, rode você mesmo, no terminal, `node <pasta desta skill>/scripts/validate.mjs --schema=carrinho.create` (ou `carrinho.update`) em cada corpo, também os que um script vai montar, e leia cada `ERRO` e `AVISO`. Não deixe essa etapa para o usuário.
+2. Em teste, o `externalId` leva o prefixo do usuário inteiro, sem abreviar.
+3. Sem a hora real do abandono (ou da última atualização do carrinho no seu sistema), não mande `createdAt` e avise o usuário. Nunca use uma data de exemplo ou estimada.
+4. Releia com `GET /abandoned-carts/{id}` o que gravou e confira `total`, `discount` e a quantidade de itens.
+
 Recurso `/abandoned-carts`. Um carrinho pertence a um cliente já cadastrado e leva o link de
 recuperação (`url`) que a Zoppy usa nos fluxos de carrinho abandonado da conta.
 
@@ -143,6 +149,9 @@ Para conferir um envio, compare `total` e `discount`, não `subtotal` e `shippin
   carrinho, e não a hora em que você envia. Se o seu sistema não guarda esse momento, use a hora
   da última atualização do carrinho no seu sistema; não invente um horário. Sem `createdAt`, a
   data é o momento do envio, e um pedido feito entre o abandono e o envio não barra a recuperação.
+- Se o cliente comprou depois do abandono, cadastre o pedido pela API de pedidos (skill
+  `zoppy-partners-pedidos`) para o mesmo cliente, com o `createdAt` real do pedido. É o pedido, e
+  não um campo do carrinho, que barra a recuperação.
 - Barrar ou não a recuperação não garante nem impede mensagem: se alguma sai depende dos fluxos
   de carrinho abandonado configurados na conta. Não prometa que a mensagem será enviada ou
   bloqueada.
