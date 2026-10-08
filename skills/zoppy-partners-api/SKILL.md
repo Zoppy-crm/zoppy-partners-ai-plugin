@@ -5,6 +5,13 @@ description: "Explica o que vale para todos os recursos da Partners API da Zoppy
 
 # Partners API da Zoppy: visão geral e roteamento
 
+**Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
+1. Rode o `scripts/validate.mjs` da skill do recurso em todo corpo de `POST` e `PUT` antes de enviar, e leia cada `ERRO` e `AVISO`.
+2. Em teste, todo dado leva o prefixo do usuário inteiro, sem abreviar, no `externalId`, no nome e no `code` do cupom.
+3. Nunca invente dado que o usuário não deu (horário, compra mínima, loja, vendedor): pergunte, ou deixe o campo de fora e avise.
+4. Depois do `POST` de um pedido, espere alguns segundos e releia antes de um `PUT` nele: um `PUT` logo em seguida pode ser desfeito.
+5. Releia com `GET` o que gravou e compare com o que mandou; diga ao usuário só o que essa leitura mostrou.
+
 Esta skill cobre o que vale para todos os recursos. Os campos de cada recurso ficam nas skills
 de recurso (tabela de roteamento no fim). Esta skill não tem payload próprio e por isso não traz
 schema nem validador: para validar um corpo de requisição, use o validador da skill do recurso.

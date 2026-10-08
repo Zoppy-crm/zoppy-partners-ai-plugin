@@ -5,6 +5,12 @@ description: "Cria, atualiza, busca e exclui clientes na Partners API da Zoppy (
 
 # Clientes na Partners API da Zoppy
 
+**Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
+1. Rode `scripts/validate.mjs` (`cliente.create` ou `cliente.update`) em todo corpo antes de enviar, e leia cada `ERRO` e `AVISO`.
+2. Em teste, `externalId`, nome e e-mail levam o prefixo do usuário inteiro, sem abreviar, e o telefone sai só da faixa que ele deu.
+3. Nunca invente dado que o usuário não deu (e-mail, data de nascimento, gênero): pergunte, ou deixe o campo de fora e avise.
+4. Releia com `GET /customers/{id}` o que gravou. Para dizer que não duplica, rode o cadastro 2 vezes antes da limpeza e compare o `id`.
+
 ## Antes de gerar código
 
 1. Leia a skill `zoppy-partners-api` para autenticação (`Authorization: Bearer` + `zoppy-access`) e base URL. Credenciais: leia `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e `ZOPPY_PARTNERS_BASE_URL` só dentro do código. Nunca imprima, ecoe ou liste o ambiente (`env`, `printenv`, `echo $ZOPPY_...`) nem cole os valores em arquivo, log ou resposta; para conferir se existem, teste só a presença (`process.env[k] ? 'definida' : 'AUSENTE'`), sem mostrar o valor.
@@ -84,7 +90,7 @@ Por isso, para sincronizar, faça upsert:
 2. Se responder 422, faça `POST /customers`.
 3. Se o `externalId` **ou o endereço** da resposta do `POST` forem diferentes do que você mandou, o telefone já era de outro cadastro e o que você mandou não foi gravado. Faça `PUT /customers/{id}` nesse id com o seu payload: ele atualiza os dados e grava o seu `externalId`.
 
-O `PUT` do passo 3 substitui o `externalId` do outro cadastro: o `externalId` antigo deixa de ser encontrado (422). Se dois registros seus dividem o mesmo telefone (família, telefone da loja), cada sincronização passa o vínculo de um para o outro; trate esses casos antes de enviar.
+O `PUT` do passo 3 substitui o `externalId` do outro cadastro: o `externalId` antigo deixa de ser encontrado (422). Ao entregar o código, avise o usuário disso: quem buscava aquele cadastro pelo `externalId` antigo (outra integração, outro registro seu) passa a receber 422. Se dois registros seus dividem o mesmo telefone (família, telefone da loja), cada sincronização passa o vínculo de um para o outro; trate esses casos antes de enviar.
 
 Código completo: `assets/examples/03-upsert-por-externalid.mjs`.
 

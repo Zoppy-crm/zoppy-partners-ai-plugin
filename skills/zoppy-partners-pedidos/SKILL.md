@@ -5,6 +5,13 @@ description: "Envia pedidos para a Partners API da Zoppy (/orders) com o total e
 
 # Pedidos na Partners API da Zoppy
 
+**Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
+1. Rode `scripts/validate.mjs` (`pedido.create` ou `pedido.update`) em todo corpo antes de enviar, e leia cada `ERRO` e `AVISO`.
+2. Em teste, o `externalId` leva o prefixo do usuário inteiro; na limpeza, apague também os cupons de `GET /coupons/order/{id}`.
+3. Nunca invente dado que o usuário não deu (data e hora da venda, loja, vendedor, cupom): pergunte, ou deixe o campo de fora e avise.
+4. Depois do `POST`, espere alguns segundos e releia antes de um `PUT` no mesmo pedido: um `PUT` logo em seguida pode ser desfeito.
+5. Releia com `GET /orders/{id}` depois de cada escrita e compare total, datas, status, itens e loja com o que mandou.
+
 ## Antes de gerar código
 
 1. Leia a skill `zoppy-partners-api` para autenticação (`Authorization: Bearer` + `zoppy-access`), base URL e paginação. Credenciais: leia `ZOPPY_PARTNERS_TOKEN`, `ZOPPY_ACCESS` e `ZOPPY_PARTNERS_BASE_URL` só dentro do código. Nunca imprima, ecoe ou liste o ambiente (`env`, `printenv`, `echo $ZOPPY_...`) nem cole os valores em arquivo, log ou resposta; para conferir se existem, teste só a presença (`process.env[k] ? 'definida' : 'AUSENTE'`), sem mostrar o valor.
