@@ -51,7 +51,7 @@ O `POST` responde 200, não 201.
 | `subtotal` | number | sim | Valor bruto do carrinho, **frete incluído**. String como `"199.90"`: 400 |
 | `discount` | number | na prática sim | Mande `0` se não houver. Ausente: aceito, mas o total gravado vira `0` |
 | `shipping` | number | na prática sim | Mande `0` se não houver. Ausente: aceito, mas o total gravado vira `0` |
-| `url` | string | sim | Link de recuperação. Ausente ou `""`: 422 `Abandoned Cart URL is required.`. Espaços nas pontas são removidos |
+| `url` | string | sim | Link de recuperação. Ausente ou `""`: 422 `Abandoned Cart URL is required.`. Só espaços (`" "`): 200, sem erro, e grava `""` (carrinho sem link de recuperação); o validador acusa ERRO. Espaços nas pontas de uma URL são removidos |
 | `externalId` | string | não | Seu id do carrinho. Repetido: 422 `External id already exists` |
 | `lineItems` | lista | não | `[{ "productId": "<id da Zoppy>", "quantity": 2 }]`. Precisa ser lista |
 | `createdAt` | data ISO 8601 com fuso | não | Momento do abandono, não a hora do envio (veja "Recuperação e pedidos"). Ausente: vira o momento do recebimento |
@@ -143,6 +143,9 @@ Para conferir um envio, compare `total` e `discount`, não `subtotal` e `shippin
   carrinho, e não a hora em que você envia. Se o seu sistema não guarda esse momento, use a hora
   da última atualização do carrinho no seu sistema; não invente um horário. Sem `createdAt`, a
   data é o momento do envio, e um pedido feito entre o abandono e o envio não barra a recuperação.
+- Barrar ou não a recuperação não garante nem impede mensagem: se alguma sai depende dos fluxos
+  de carrinho abandonado configurados na conta. Não prometa que a mensagem será enviada ou
+  bloqueada.
 - O carrinho **não é marcado como convertido**: não há campo de status ou conversão na resposta,
   e ela não muda quando chega o pedido.
 

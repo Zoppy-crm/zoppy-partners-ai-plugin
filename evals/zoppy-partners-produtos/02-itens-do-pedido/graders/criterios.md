@@ -16,8 +16,8 @@ FAIL se falta qualquer critério de acerto ou se aparece qualquer erro que repro
 4. Depois do `POST /orders`, confere que a resposta tem 2 itens em `lineItems` e trata diferença como
    falha, explicando que a API descarta item com `productId` desconhecido sem devolver erro.
 5. Sugere guardar o mapa código -> id da Zoppy para não buscar a cada pedido.
-6. Para valores, datas e status do pedido, remete à skill zoppy-partners-pedidos em vez de inventar
-   regra.
-7. Ao ler o pedido de volta, identifica os itens por `lineItems[].productId` e não por
-   `lineItems[].product.id`, ou lembra que todo produto precisa de `externalId` único para o
-   `lineItems[].product` vir certo.
+6. Valores, datas e status do pedido seguem as regras da Partners API (ou o validador de pedidos),
+   sem regra inventada.
+7. Se ler o pedido de volta ou conferir os itens, identifica cada item por `lineItems[].productId` e
+   não por `lineItems[].product.id`. Se a resposta não mostra leitura nem conferência por item,
+   este item conta como cumprido.

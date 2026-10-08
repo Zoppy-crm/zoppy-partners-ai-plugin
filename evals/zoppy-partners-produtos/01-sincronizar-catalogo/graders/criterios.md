@@ -23,4 +23,5 @@ FAIL se falta qualquer critério de acerto ou se aparece qualquer erro que repro
 8. Depois de um POST, compara o `externalId` da resposta com o `sku` enviado: se vier outro, trata como
    colisão de nome (a deduplicação ignora maiúsculas e acentos) e não grava aquele id como se fosse do
    seu produto.
-9. Usa a mesma grafia de categoria em todos os produtos (não mistura `Verao` e `VERAO`).
+9. Avisa que grafias diferentes da mesma categoria (`Verao` e `VERAO`) viram categorias distintas, ou
+   normaliza a grafia no código.

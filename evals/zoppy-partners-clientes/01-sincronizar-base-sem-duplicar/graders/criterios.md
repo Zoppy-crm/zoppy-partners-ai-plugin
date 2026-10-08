@@ -13,7 +13,7 @@ FAIL se falta qualquer critério de acerto ou se aparece qualquer erro que repro
 - Manda `Authorization: Bearer <token>` e `zoppy-access: <chave>` em toda chamada.
 - Faz upsert: `GET /customers/external/{id do ERP}`; 200 leva a `PUT /customers/{id da Zoppy}`; 422 leva a `POST /customers`.
 - Depois do `POST`, compara o `externalId` **e o endereço** da resposta com os enviados e, se algum for diferente, faz `PUT` no `id` devolvido (telefone já cadastrado ou endereço herdado de cadastro excluído).
-- Avisa que esse `PUT` substitui o `externalId` do cadastro antigo (dois registros do ERP com o mesmo celular trocam o vínculo a cada sincronização).
+- Avisa que, ao ligar o cadastro existente, o `externalId` antigo deixa de ser encontrado (dois registros do ERP com o mesmo celular trocam o vínculo a cada sincronização).
 - Nunca manda texto vazio para "limpar" campo sem querer (`email: ""` apaga o e-mail no `PUT`).
 - Separa `nome_completo` em `firstName` (primeira palavra) e `lastName` (resto), os dois como texto.
 - Manda `phone` como texto; pode mandar com máscara.

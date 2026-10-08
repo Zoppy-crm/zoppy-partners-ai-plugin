@@ -21,6 +21,8 @@ A Zoppy não inicia a recuperação quando já existe um pedido:
    mandou no pedido), não a hora em que o pedido foi enviado.
 
 O status do pedido não importa: pedido cancelado também barra. O teste é feito a cada avaliação.
+Barrar ou não a recuperação não garante nem impede mensagem: se alguma sai depende dos fluxos de
+carrinho abandonado configurados na conta.
 Observado em teste:
 
 | Carrinho | Pedido do mesmo cliente | Resultado |

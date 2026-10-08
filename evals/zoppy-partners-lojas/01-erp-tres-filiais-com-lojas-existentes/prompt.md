@@ -2,7 +2,7 @@
 description: "ERP de lojas físicas com 3 filiais, numa conta que já tem lojas de outra integração"
 tags: [zoppy-partners-lojas]
 max_turns: 15
-allowed_tools: [Read, Glob, Grep, Skill]
+allowed_tools: [Read, Glob, Grep, Skill, Bash]
 ---
 
 Sou o integrador de um ERP de lojas físicas. O cliente tem 3 filiais no ERP: código `01` FÁBRICA,
@@ -20,4 +20,4 @@ isto (já existia antes de mim, de outro sistema que a loja usa):
 ```
 
 Escreva o código Node que cadastra as filiais na Zoppy e manda os pedidos com a loja certa. Use as
-variáveis de ambiente da Zoppy.
+variáveis de ambiente da Zoppy. Mostre o código completo na resposta.
