@@ -60,6 +60,18 @@ function checkDates(payload, mode) {
     return issues;
 }
 
+function checkStore(payload, mode) {
+    const hasStoreId = payload.storeId !== undefined;
+    const store = payload.store;
+    if (!hasStoreId && store === undefined) {
+        if (mode !== 'create') return [];
+        return [warning('storeId', 'sem storeId nem store: o pedido vai para a loja padrão "Integrador Externo" (200, sem erro). Envie o storeId da filial (skill zoppy-partners-lojas)')];
+    }
+    if (hasStoreId || !store || store.externalId !== undefined || store.name === undefined) return [];
+    const effect = mode === 'update' ? 'tira o pedido da loja atual e o grava na loja padrão "Integrador Externo"' : 'grava o pedido na loja padrão "Integrador Externo"';
+    return [warning('store', `só store.name: prefira storeId. O nome precisa bater com espaços (maiúsculas e acentos não importam), com duas lojas de mesmo nome o pedido vai para uma delas sem garantia de qual, e nome sem correspondência ${effect} sem erro`)];
+}
+
 function checkCouponOnUpdate(payload, mode) {
     if (mode !== 'update' || payload.couponCode === undefined) return [];
     if (payload.couponCode === '') return [warning('couponCode', 'vazio: o PUT apaga o cupom gravado no pedido. Para manter o cupom, omita o campo')];
@@ -103,6 +115,7 @@ export function orderRules(payload, mode) {
         ...checkTotal(payload),
         ...checkStatus(payload, mode),
         ...checkDates(payload, mode),
+        ...checkStore(payload, mode),
         ...checkCoupon(payload),
         ...checkCouponOnUpdate(payload, mode),
         ...checkLineItems(payload, mode),

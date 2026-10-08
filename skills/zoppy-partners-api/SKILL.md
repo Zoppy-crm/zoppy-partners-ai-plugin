@@ -1,6 +1,6 @@
 ---
 name: zoppy-partners-api
-description: "Explica o que vale para todos os recursos da Partners API da Zoppy e indica a skill de cada um: autenticação com Authorization Bearer mais o header zoppy-access, URLs base, formato de rota, paginação (after, page, pageSize), datas ISO 8601 e fuso, formato de erro, ordem de envio e idempotência. Use antes de escrever código que chama a Partners API e ao depurar 401, 403 com página HTML, 422 Invalid after date, datas gravadas 3 horas fora ou paginação que pula registros. Gatilhos: Partners API Zoppy, integrar com a Zoppy, token da Zoppy, zoppy-access, Just a moment, listar clientes Zoppy, paginação Zoppy, ordem de envio; em inglês: Zoppy Partners API authentication, base URL, pagination, error format, integration order. Não use para os campos de cada recurso: clientes em zoppy-partners-clientes, produtos em zoppy-partners-produtos, pedidos, lojas e vendedores em zoppy-partners-pedidos, carrinho em zoppy-partners-carrinho-abandonado, cupons e webhooks em zoppy-partners-cupons-webhooks."
+description: "Explica o que vale para todos os recursos da Partners API da Zoppy e indica a skill de cada um: autenticação com Authorization Bearer mais o header zoppy-access, URLs base, paginação (after, page, pageSize), datas ISO 8601 e fuso, formato de erro, ordem de envio e idempotência. Use antes de escrever código que chama a Partners API e ao depurar 401, 403 com página HTML, 422 Invalid after date, datas gravadas 3 horas fora ou paginação que pula registros. Gatilhos: Partners API Zoppy, integrar com a Zoppy, token da Zoppy, zoppy-access, Just a moment, listar clientes Zoppy, paginação Zoppy, ordem de envio; em inglês: Zoppy Partners API authentication, pagination, error format, integration order. Não use para os campos de cada recurso: clientes em zoppy-partners-clientes, produtos em zoppy-partners-produtos, pedidos em zoppy-partners-pedidos, lojas em zoppy-partners-lojas, vendedores em zoppy-partners-vendedores, carrinho em zoppy-partners-carrinho-abandonado, cupons e webhooks em zoppy-partners-cupons-webhooks."
 ---
 
 # Partners API da Zoppy: visão geral e roteamento
@@ -188,11 +188,10 @@ Catálogo completo com corpos reais em [references/erros.md](references/erros.md
 
 ## Ordem de envio
 
-1. **Lojas e vendedores** (`/stores`, `/users`). O pedido aponta a loja por `storeId` (id da
-   Zoppy) ou por `store` (`externalId`/`name`). `storeId` inexistente dá
-   `422 Store not found for this company`; `store` que não bate com nenhuma loja não dá erro e o
-   pedido vai para a loja padrão `Integrador Externo`. Vendedor não encontrado não dá erro: o
-   pedido fica sem vendedor (`userId: null`).
+1. **Lojas e vendedores** (`/stores`, `/users`). Liste as lojas existentes antes de criar e guarde
+   o `storeId` de cada filial: pedido sem loja reconhecida não dá erro e vai para a loja padrão
+   `Integrador Externo` (skill zoppy-partners-lojas). Vendedor não encontrado também não dá erro:
+   o pedido fica sem vendedor (skill zoppy-partners-vendedores).
 2. **Clientes** (`/customers`). Pedido e carrinho exigem `customerId` com o `id` da Zoppy.
    Cliente inexistente dá `422 Customer not found`.
 3. **Produtos** (`/products`). Itens de pedido e carrinho usam `productId` com o `id` da Zoppy.
@@ -209,8 +208,8 @@ Sem `externalId`, cada `POST` de loja, pedido ou carrinho cria um registro novo:
 
 | Recurso | Chave que a API usa no `POST` | Reenvio |
 |---|---|---|
-| Loja | `externalId` | atualiza o nome e devolve a mesma loja (mesmo `id`) |
-| Vendedor | `email` | `422 User email already in use.` |
+| Loja | `externalId` | atualiza o nome e devolve a mesma loja (mesmo `id`). Veja zoppy-partners-lojas |
+| Vendedor | `email` | `422 User email already in use.`. Veja zoppy-partners-vendedores |
 | Cliente | telefone, não o `externalId` | mesmo telefone devolve o cliente existente sem alterar os dados cadastrais; mesmo `externalId` com outro telefone cria outro cliente. Veja zoppy-partners-clientes |
 | Produto | `name` (mais `provider`, quando enviado), não o `externalId` | mesmo nome e mesmo `provider` devolvem o produto existente sem alterar preço nem `externalId`; nome igual com outro `provider` cria outro produto. Veja zoppy-partners-produtos |
 | Pedido | `externalId` | `422 External id already exists`. Como alterar um pedido: veja zoppy-partners-pedidos |
@@ -226,7 +225,9 @@ carrinho como "já foi": busque o registro por `GET /orders/external/{externalId
 |---|---|---|
 | Clientes | `/customers` | zoppy-partners-clientes |
 | Produtos | `/products` | zoppy-partners-produtos |
-| Pedidos, lojas, vendedores | `/orders`, `/stores`, `/users` | zoppy-partners-pedidos |
+| Pedidos | `/orders` | zoppy-partners-pedidos |
+| Lojas e a loja do pedido | `/stores` | zoppy-partners-lojas |
+| Vendedores e o vendedor do pedido | `/users` | zoppy-partners-vendedores |
 | Carrinho abandonado | `/abandoned-carts` | zoppy-partners-carrinho-abandonado |
 | Cupons e webhooks | `/coupons`, `/coupons-config`, `/webhooks` | zoppy-partners-cupons-webhooks |
 | NPS, campanhas, empresa, campos personalizados | `/nps`, `/campaigns`, `/companies`, `/custom-field` | fora do escopo destas skills; veja a doc pública da Partners API |

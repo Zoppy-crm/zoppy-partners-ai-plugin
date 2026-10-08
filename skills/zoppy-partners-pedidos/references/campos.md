@@ -52,9 +52,9 @@ Os mesmos campos, menos `externalId` e `customerId`, que são ignorados se viere
 
 ## Objetos store e seller
 
-`store`: `{ "name": "Loja Centro", "externalId": "loja-001" }`. A API procura uma loja **ativa** da conta com esse `name` **ou** esse `externalId`. Achou: usa. Não achou: usa a loja padrão "Integrador Externo". Não cria a loja informada e não recusa o pedido. Os dois campos são opcionais. Se vier `storeId` junto, vale o `storeId`.
-
-`seller`: `{ "email": "...", "revenueRecord": "...", "phone": "..." }`. A API procura um usuário da conta que tenha esse e-mail **ou** esse `revenueRecord` **ou** esse telefone. Se `userId` vier e existir, ele vale e o `seller` é ignorado. A busca por `phone` não acha o vendedor cujo telefone está cadastrado com `+55`; prefira `email`.
+`store` (`{ "name", "externalId" }`) e `seller` (`{ "email", "revenueRecord", "phone" }`) são alternativas ao
+`storeId` e ao `userId`. Regras de correspondência, prioridade e casos de borda: skills
+`zoppy-partners-lojas` e `zoppy-partners-vendedores`.
 
 ## Itens (lineItems)
 
