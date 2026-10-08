@@ -6,7 +6,7 @@ description: "Envia, atualiza, busca, lista e exclui carrinhos abandonados na Pa
 # Carrinho abandonado na Partners API da Zoppy
 
 **Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
-1. Rode `scripts/validate.mjs` (`carrinho.create` ou `carrinho.update`) em todo corpo antes de enviar, e leia cada `ERRO` e `AVISO`.
+1. Antes de entregar código ou de chamar a API, rode você mesmo, no terminal, `node <pasta desta skill>/scripts/validate.mjs --schema=carrinho.create` (ou `carrinho.update`) em cada corpo, também os que um script vai montar, e leia cada `ERRO` e `AVISO`. Não deixe essa etapa para o usuário.
 2. Em teste, o `externalId` leva o prefixo do usuário inteiro, sem abreviar.
 3. Sem a hora real do abandono (ou da última atualização do carrinho no seu sistema), não mande `createdAt` e avise o usuário. Nunca use uma data de exemplo ou estimada.
 4. Releia com `GET /abandoned-carts/{id}` o que gravou e confira `total`, `discount` e a quantidade de itens.

@@ -6,7 +6,7 @@ description: "Cria, atualiza, busca e exclui clientes na Partners API da Zoppy (
 # Clientes na Partners API da Zoppy
 
 **Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
-1. Rode `scripts/validate.mjs` (`cliente.create` ou `cliente.update`) em todo corpo antes de enviar, e leia cada `ERRO` e `AVISO`.
+1. Antes de entregar código ou de chamar a API, rode você mesmo, no terminal, `node <pasta desta skill>/scripts/validate.mjs --schema=cliente.create` (ou `cliente.update`) em cada corpo, também os que um script vai montar, e leia cada `ERRO` e `AVISO`. Não deixe essa etapa para o usuário.
 2. Em teste, `externalId`, nome e e-mail levam o prefixo do usuário inteiro, sem abreviar, e o telefone sai só da faixa que ele deu.
 3. Nunca invente dado que o usuário não deu (e-mail, data de nascimento, gênero): pergunte, ou deixe o campo de fora e avise.
 4. Releia com `GET /customers/{id}` o que gravou. Para dizer que não duplica, rode o cadastro 2 vezes antes da limpeza e compare o `id`.

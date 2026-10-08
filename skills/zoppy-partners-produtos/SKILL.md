@@ -6,7 +6,7 @@ description: "Cadastra e mantém produtos na Partners API da Zoppy (POST, GET, P
 # Produtos na Partners API da Zoppy
 
 **Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
-1. Rode `scripts/validate.mjs` (`produto.create` ou `produto.update`) em todo corpo antes de enviar, e leia cada `ERRO` e `AVISO`.
+1. Antes de entregar código ou de chamar a API, rode você mesmo, no terminal, `node <pasta desta skill>/scripts/validate.mjs --schema=produto.create` (ou `produto.update`) em cada corpo, também os que um script vai montar, e leia cada `ERRO` e `AVISO`. Não deixe essa etapa para o usuário.
 2. Em teste, `externalId` e `name` levam o prefixo do usuário inteiro, sem abreviar.
 3. Nunca invente dado que o usuário não deu (categoria, `provider`, `specification`): pergunte, ou deixe o campo de fora e avise.
 4. Depois de todo `POST` ou `PUT`, releia com `GET /products/{id}` e compare `price` e `categories` com o que mandou.

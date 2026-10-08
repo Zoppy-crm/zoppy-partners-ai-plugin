@@ -6,7 +6,7 @@ description: "Cadastra vendedores na Partners API da Zoppy (/users) e atribui ca
 # Vendedores na Partners API da Zoppy
 
 **Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
-1. Rode `scripts/validate.mjs --schema=vendedor.create` em todo corpo de `POST /users`, e o da skill `zoppy-partners-pedidos` no pedido, antes de enviar.
+1. Antes de entregar código ou de chamar a API, rode você mesmo, no terminal, `node <pasta desta skill>/scripts/validate.mjs --schema=vendedor.create` em cada corpo de `POST /users`, e o validador de `zoppy-partners-pedidos` no pedido, e leia cada `ERRO` e `AVISO`. Não deixe essa etapa para o usuário.
 2. Em teste, `name` e `revenueRecord` levam o prefixo do usuário inteiro, e o e-mail é novo a cada execução, em `@example.com`.
 3. Nunca invente telefone, e-mail ou `revenueRecord` de vendedor que o usuário não deu: pergunte, ou deixe `revenueRecord` de fora.
 4. Releia com `GET /users/{id}` o que gravou. Não existe `PUT /users`: confira o telefone antes de criar.

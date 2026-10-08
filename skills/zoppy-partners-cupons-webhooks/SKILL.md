@@ -6,7 +6,7 @@ description: "Registra na Partners API da Zoppy o cupom criado no sistema do par
 # Cupons e webhooks na Partners API da Zoppy
 
 **Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
-1. Rode `scripts/validate.mjs` (`cupom.create`, `cupom-compartilhado.create` ou `webhook.create`) em todo corpo antes de enviar, e leia cada `ERRO` e `AVISO`.
+1. Antes de entregar código ou de chamar a API, rode você mesmo, no terminal, `node <pasta desta skill>/scripts/validate.mjs --schema=cupom.create` (ou `cupom-compartilhado.create`, `webhook.create`) em cada corpo, também os que um script vai montar, e leia cada `ERRO` e `AVISO`. Não deixe essa etapa para o usuário.
 2. Em teste, o `code` (e o `externalId` do cupom individual) leva o prefixo do usuário inteiro, sem abreviar.
 3. Nunca invente dado que o usuário não deu: sem compra mínima, mande `minPurchaseValue: 0`; sem validade definida, pergunte.
 4. Em `phone`, use o telefone que a Zoppy devolveu no cadastro do cliente (`customer.phone`), não o que você enviou.
