@@ -28,6 +28,7 @@ Cada linha foi enviada à Partners API em homologação. Nomes e códigos encurt
 | `DELETE /stores/{id}` | 200 `{"result":true}`; depois `GET` por id e por código 404, e some da listagem |
 | `DELETE` de novo | 404 `Store not found` |
 | `POST` com o código da loja excluída | 200, loja nova com outro `id` |
+| `PUT` na loja `D2` com o código da loja `D1` | 200; as duas ficam ativas com o mesmo `externalId`; `GET /stores/external/<código>` e `store.externalId` no pedido pegam uma delas (em duas rodadas, uma vez cada) |
 
 ## Pedido apontando a loja (`POST /orders`)
 
@@ -46,6 +47,10 @@ Cada linha foi enviada à Partners API em homologação. Nomes e códigos encurt
 | `store:{name:"DEL"}` (loja excluída) | Integrador Externo |
 | `storeId` de `LJ CENTRO` + `store:{externalId:"loja-sp"}` | LJ CENTRO |
 | `store:{}`, `storeId:""` ou `store:"LJ CENTRO"` (texto) | Integrador Externo |
+| `storeId:""` + `store:{externalId:"loja-01"}` | LJ CENTRO (vale o `store`) |
+| `store:{externalId:""}`, com uma loja de código vazio na conta | a loja de código vazio |
+| `store:{externalId:"", name:"LJ CENTRO"}`, idem | a loja de código vazio, não a LJ CENTRO |
+| `store:{name:""}`, com uma loja sem nome na conta | a loja sem nome |
 | `storeId` da loja excluída | 422 `Store "DEL" is inactive and cannot receive orders (storeId: ...). Reactivate it in the Zoppy panel, under the integration that owns this store.` |
 | `storeId` inexistente, `"abc"` ou de loja de outra conta | 422 `Store not found for this company (storeId: ...)` |
 
@@ -53,10 +58,12 @@ Cada linha foi enviada à Partners API em homologação. Nomes e códigos encurt
 
 | Envio no `PUT` (pedido inteiro) | Resultado |
 |---|---|
-| `storeId` da filial, num pedido `completed` da loja padrão, sem `couponCode`, vendedor e `provider` | loja trocada; `total`, `subtotal`, `discount`, `shipping`, `status`, `createdAt`, `completedAt`, itens, cupom, vendedor, `provider` e `externalId` iguais |
+| `storeId` da filial, num pedido `completed` da loja padrão, sem `couponCode`, vendedor e `provider` | loja trocada; `total`, `subtotal`, `discount`, `shipping`, `status`, `createdAt`, `completedAt`, produto e quantidade dos itens, cupom, vendedor, `provider` e `externalId` iguais; itens com `id` novo e `updatedAt` do pedido na hora do `PUT` |
 | sem `storeId` e sem `store` | loja mantida |
 | `store:{externalId:"loja-sp"}` | Loja São Paulo |
 | `store:{name:"nao existe"}` num pedido da LJ CENTRO | Integrador Externo |
+| `store:{}` ou `store:"qualquer"` num pedido da LJ CENTRO | Integrador Externo |
+| `store:null` ou `storeId:""` num pedido da LJ CENTRO | loja mantida |
 | `storeId` da loja excluída | 422 `Store "DEL" is inactive ...` |
 | só `{storeId}` | 400 `["subtotal must be a number conforming to the specified constraints", ...]` |
 

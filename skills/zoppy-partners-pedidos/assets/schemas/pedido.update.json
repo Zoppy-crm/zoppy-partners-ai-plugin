@@ -11,8 +11,7 @@
     },
     "storeId": {
       "type": "string",
-      "minLength": 1,
-      "description": "Id da loja na Zoppy; precisa existir e estar ativa. Texto vazio manda o pedido para a loja padrão"
+      "description": "Id da loja na Zoppy; precisa existir e estar ativa. Ausente ou texto vazio, sem store, mantém a loja do pedido"
     },
     "store": {
       "type": "object",

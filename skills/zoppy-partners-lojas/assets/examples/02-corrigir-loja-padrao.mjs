@@ -43,7 +43,8 @@ async function freeTestPhone() {
     for (let attempt = 0; attempt < 20; attempt++) {
         const phone = `11900081${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
         const { status } = await request('GET', `/customers/phone/${phone}`);
-        if (status !== 200) return phone;
+        if (status === 422) return phone; // 422 Customer not found: telefone livre
+        if (status !== 200) throw new Error(`GET /customers/phone respondeu ${status}`);
     }
     throw new Error('não achei telefone de teste livre');
 }
@@ -138,11 +139,14 @@ async function main() {
     await sleep(5000);
     const periodStart = new Date(Date.parse(saleDate) - 60_000).toISOString();
     const orders = await listAll(`/orders?after=${encodeURIComponent(periodStart)}`);
-    const toFix = orders.filter((order) => order.storeId === defaultStore.id && order.externalId?.startsWith(runId));
+    // A loja padrão é de todas as integrações da conta: só mexa em pedido que existe no SEU sistema.
+    // Aqui, o "seu sistema" é este mapa externalId -> storeId da filial.
+    const branchByExternalId = new Map([[`${runId}-pedido`, branch.id]]);
+    const toFix = orders.filter((order) => order.storeId === defaultStore.id && branchByExternalId.has(order.externalId));
     expectEqual('pedidos na loja padrão', toFix.length, 1);
 
     // 3. Corrige um por um, com a filial que o seu sistema diz para cada externalId.
-    const branchOf = () => branch.id;
+    const branchOf = (externalId) => branchByExternalId.get(externalId);
     const report = [];
     for (const order of toFix) report.push(await fixOrderStore(order.id, branchOf(order.externalId)));
 

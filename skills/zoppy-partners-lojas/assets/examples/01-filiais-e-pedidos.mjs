@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Exemplo: cadastrar as filiais sem duplicar (reaproveitando a loja que já existe pelo código) e mandar
-// um pedido para cada filial por storeId, conferindo a loja gravada na leitura.
+// Exemplo: cadastrar as filiais sem duplicar. Reaproveita sozinho só o mapa salvo da própria integração;
+// loja existente com o mesmo código ou nome vira lista "a confirmar" com o usuário, e nada é criado antes
+// disso. Depois manda um pedido por filial por storeId e confere a loja gravada na leitura.
 // Requer ZOPPY_PARTNERS_TOKEN, ZOPPY_ACCESS e ZOPPY_PARTNERS_BASE_URL.
 const missing = ['ZOPPY_PARTNERS_TOKEN', 'ZOPPY_ACCESS', 'ZOPPY_PARTNERS_BASE_URL'].filter((name) => !process.env[name]);
 if (missing.length) {
@@ -38,7 +39,8 @@ async function freeTestPhone() {
     for (let attempt = 0; attempt < 20; attempt++) {
         const phone = `11900080${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
         const { status } = await request('GET', `/customers/phone/${phone}`);
-        if (status !== 200) return phone;
+        if (status === 422) return phone; // 422 Customer not found: telefone livre
+        if (status !== 200) throw new Error(`GET /customers/phone respondeu ${status}`);
     }
     throw new Error('não achei telefone de teste livre');
 }
@@ -57,26 +59,37 @@ async function listAllStores() {
     return stores;
 }
 
-// Devolve filial -> storeId. Reaproveita a loja que já tem o código da filial como externalId
-// (a API compara sem diferenciar maiúsculas) e cria só as que faltam. Filiais cadastradas por outra
-// integração com outro código entram em `confirmedMap`, que o usuário confirma par a par.
-async function syncBranches(branches, confirmedMap = {}) {
-    const byExternalId = new Map((await listAllStores()).filter((store) => store.externalId).map((store) => [store.externalId.toLowerCase(), store]));
+// Compara como a API: sem diferenciar maiúsculas e acentos (espaços contam).
+const fold = (text) => (text ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+
+// savedMap: filial -> storeId que a SUA integração já guardou (ou que o usuário confirmou).
+// Reaproveita sozinho só o que está nesse mapa. Loja existente com o mesmo código ou o mesmo nome
+// de uma filial fora do mapa vai para `toConfirm` e nada é criado: códigos de sistemas diferentes são
+// independentes, e só o usuário sabe se é a mesma filial. Sem candidata, a filial é criada.
+async function syncBranches(branches, savedMap = {}) {
+    const stores = await listAllStores();
+    const activeIds = new Set(stores.map((store) => store.id));
     const result = {};
+    const toConfirm = [];
+    const toCreate = [];
     for (const branch of branches) {
-        if (confirmedMap[branch.code]) {
-            result[branch.code] = { storeId: confirmedMap[branch.code], reused: true };
+        const saved = savedMap[branch.code];
+        if (saved && activeIds.has(saved)) {
+            result[branch.code] = saved;
             continue;
         }
-        const existing = byExternalId.get(branch.code.toLowerCase());
-        if (existing) {
-            result[branch.code] = { storeId: existing.id, reused: true };
-            continue;
-        }
-        const created = await zoppy('POST', '/stores', { externalId: branch.code, name: branch.name, isEcommerce: false });
-        result[branch.code] = { storeId: created.id, reused: false };
+        const candidates = stores.filter((store) => fold(store.externalId) === fold(branch.code) || fold(store.name) === fold(branch.name));
+        if (candidates.length) toConfirm.push({ branch, candidates: candidates.map(({ id, externalId, name }) => ({ id, externalId, name })) });
+        else toCreate.push(branch);
     }
-    return result;
+    if (toConfirm.length) return { toConfirm, map: null, created: [] };
+    const created = [];
+    for (const branch of toCreate) {
+        const store = await zoppy('POST', '/stores', { externalId: branch.code, name: branch.name, isEcommerce: false });
+        result[branch.code] = store.id;
+        created.push(store.id);
+    }
+    return { toConfirm: [], map: result, created };
 }
 
 const runId = `skills-test-zoppy-partners-lojas-${Date.now()}`;
@@ -85,25 +98,38 @@ const created = { stores: new Set(), orders: [] };
 async function main() {
     const branches = [
         { code: `${runId}-01`, name: `${runId} LJ CENTRO` },
-        { code: `${runId}-02`, name: `${runId} LJ BAIRRO` },
+        { code: `${runId}-02`, name: `${runId} LJ Sao Paulo` },
         { code: `${runId}-03`, name: `${runId} LJ SHOPPING` }
     ];
 
-    // 1. A filial 01 já existe na conta (cadastrada antes, por você ou por uma rodada anterior).
-    const existing = await zoppy('POST', '/stores', { externalId: branches[0].code, name: branches[0].name, isEcommerce: false });
-    created.stores.add(existing.id);
+    // 1. Outra integração da conta já cadastrou duas lojas: uma com o mesmo código da filial 01 (em
+    //    maiúsculas) e outra com o nome da filial 02 escrito com acento.
+    const otherA = await zoppy('POST', '/stores', { externalId: `${runId}-01`.toUpperCase(), name: `${runId} FILIAL 1 DO OUTRO SISTEMA`, isEcommerce: false });
+    const otherB = await zoppy('POST', '/stores', { externalId: `${runId}-outro-77`, name: `${runId} LJ São Paulo`, isEcommerce: false });
+    created.stores.add(otherA.id);
+    created.stores.add(otherB.id);
 
-    // 2. Sincroniza: reaproveita a 01 e cria a 02 e a 03. Rodar de novo não cria nada.
+    // 2. Primeira sincronização, sem mapa salvo: não cria nada e devolve a lista a confirmar.
     const first = await syncBranches(branches);
-    Object.values(first).forEach(({ storeId }) => created.stores.add(storeId));
-    expectEqual('filial 01 reaproveitada', first[branches[0].code].storeId, existing.id);
-    expectEqual('filial 01 não criada de novo', first[branches[0].code].reused, true);
-    const second = await syncBranches(branches);
-    for (const branch of branches) expectEqual(`segunda rodada, ${branch.code}`, second[branch.code].storeId, first[branch.code].storeId);
+    expectEqual('filiais a confirmar', first.toConfirm.map(({ branch }) => branch.code).join(','), `${runId}-01,${runId}-02`);
+    expectEqual('nada criado antes da confirmação', first.created.length, 0);
+
+    // 3. O usuário confirma os pares (aqui, simulado). O mapa confirmado é salvo pela sua integração.
+    const confirmed = { [`${runId}-01`]: otherA.id, [`${runId}-02`]: otherB.id };
+    const second = await syncBranches(branches, confirmed);
+    second.created.forEach((id) => created.stores.add(id));
+    expectEqual('só a filial 03 criada', second.created.length, 1);
+    const savedMap = second.map;
+
+    // 4. Rodar de novo com o mapa salvo não cria nada.
+    const third = await syncBranches(branches, savedMap);
+    expectEqual('terceira rodada sem criar', third.created.length, 0);
     const ours = (await listAllStores()).filter((store) => store.name.startsWith(runId));
     expectEqual('lojas do teste na conta', ours.length, 3);
+    const otherAfter = await zoppy('GET', `/stores/${otherA.id}`);
+    expectEqual('loja do outro sistema não renomeada', otherAfter.name, `${runId} FILIAL 1 DO OUTRO SISTEMA`);
 
-    // 3. Um pedido por filial, sempre por storeId, e a loja conferida na leitura.
+    // 5. Um pedido por filial, sempre por storeId, e a loja conferida na leitura.
     const phone = await freeTestPhone();
     const customer = await zoppy('POST', '/customers', {
         externalId: `${runId}-cliente`,
@@ -115,7 +141,7 @@ async function main() {
     expectEqual('cliente criado é o nosso', customer.externalId, `${runId}-cliente`);
     created.customerId = customer.id;
     for (const branch of branches) {
-        const storeId = first[branch.code].storeId;
+        const storeId = savedMap[branch.code];
         const order = await zoppy('POST', '/orders', {
             externalId: `${branch.code}-pedido`,
             customerId: customer.id,
@@ -132,7 +158,7 @@ async function main() {
         expectEqual(`loja do pedido da filial ${branch.code}`, back.storeId, storeId);
     }
 
-    console.log(JSON.stringify({ ok: true, runId, lojas: Object.fromEntries(Object.entries(first).map(([code, value]) => [code, value.storeId])) }));
+    console.log(JSON.stringify({ ok: true, runId, lojas: savedMap }));
 }
 
 async function cleanup() {

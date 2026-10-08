@@ -61,6 +61,10 @@ O `externalId` vale para todas as lojas ativas da conta, inclusive as criadas po
 Se o seu código de filial for igual ao `externalId` de uma loja que outra integração criou, o seu
 `POST` renomeia aquela loja. Confira na listagem antes.
 
+O `externalId` não é único na conta: o `PUT /stores/{id}` aceita o código de outra loja ativa, e outra
+integração pode usar o mesmo código que você. Com duas lojas ativas de mesmo código, o `POST`, a busca
+por código e o `store.externalId` do pedido pegam uma delas, sem garantia de qual.
+
 ## Antes de criar: reaproveitar as lojas existentes
 
 A conta pode já ter lojas criadas por outra integração (um ERP, um PDV, a plataforma de e-commerce),
@@ -68,11 +72,13 @@ com outros códigos e nomes escritos de outro jeito ("LJ BH" e "LOJA BELO HORIZO
 loja para a mesma filial deixa os pedidos dessa filial divididos entre duas lojas, e tudo o que é
 separado por loja passa a mostrar a filial em dois pedaços. Por isso:
 
-1. Liste todas as lojas (`GET /stores`, todas as páginas).
+1. Liste todas as lojas (`GET /stores`, todas as páginas) e procure códigos repetidos (duas lojas com o mesmo `externalId`, sem diferenciar maiúsculas e acentos): leve esses casos ao usuário antes de mapear.
 2. Monte com o usuário uma tabela **filial do seu sistema → `storeId` existente**. Compare nome e
    código ignorando maiúsculas, acentos e espaços, mas **confirme cada par com o usuário**: só ele
-   sabe se "LJ BELV" é a mesma filial que "LOJA BELVEDERE". Não decida sozinho.
-3. Crie (`POST /stores` com `externalId` = código da filial) só as filiais que não existem.
+   sabe se "LJ BELV" é a mesma filial que "LOJA BELVEDERE". Não decida sozinho, nem quando o código
+   é igual: códigos de sistemas diferentes são independentes (o `005` de um ERP pode ser outra filial
+   no PDV). Reaproveite sem perguntar só a loja que já está no mapa salvo da sua integração.
+3. Crie (`POST /stores` com `externalId` = código da filial) só as filiais que o usuário confirmou que não existem.
 4. Guarde o `storeId` de cada filial na sua base e mande esse `storeId` em todos os pedidos.
 
 Se a filial existe mas foi criada por outra integração, use o `storeId` dela como está. Não renomeie
@@ -90,7 +96,8 @@ objeto `store`. A Zoppy decide nesta ordem:
 | `storeId` inexistente ou de outra conta | 422 `Store not found for this company (storeId: ...)`, nada é gravado |
 | `storeId` de loja excluída (inativa) | 422 `Store "<nome>" is inactive and cannot receive orders (storeId: ...). Reactivate it in the Zoppy panel, under the integration that owns this store.` |
 | `store: { externalId }` ou `store: { name }` | Uma loja ativa com esse `externalId` **ou** esse `name` |
-| `store` sem nenhuma loja correspondente, `store: {}`, `storeId: ""` ou nada | Loja padrão "Integrador Externo", com 200 e sem aviso |
+| `store` sem nenhuma loja correspondente, `store: {}` ou `store` em texto | Loja padrão "Integrador Externo", com 200 e sem aviso, no `POST` e no `PUT` |
+| Nada, ou `storeId: ""` sem `store` | No `POST`, loja padrão. No `PUT`, a loja do pedido não muda |
 
 Como o `store` casa:
 
@@ -100,17 +107,20 @@ Como o `store` casa:
 - `name` e `externalId` juntos que apontam para lojas diferentes: vai para uma das duas, sem garantia de qual.
 - Loja excluída nunca casa pelo `store`: o pedido vai para a loja padrão.
 - `store` mandado como texto (`"store": "Loja Centro"`) é aceito e vai para a loja padrão.
+- Texto vazio não é ignorado: `store.externalId: ""` casa com uma loja de código vazio e `store.name: ""` com uma loja sem nome, se a conta tiver (e o campo vazio ganha do outro campo). Omita o campo em vez de mandar `""`.
 
 **Use `storeId`.** Ele falha alto (422) quando está errado; o `store` erra em silêncio.
 
-No `PUT /orders/{id}`: sem `storeId` e sem `store`, a loja do pedido não muda. Com `store` sem
-correspondência, o pedido **sai da loja em que estava** e vai para a loja padrão.
+No `PUT /orders/{id}`: sem `storeId` e sem `store` (ou com `store: null` ou `storeId: ""`), a loja do
+pedido não muda. Com `store` sem correspondência, `store: {}` ou `store` em texto, o pedido **sai da
+loja em que estava** e vai para a loja padrão.
 
 ## A loja padrão "Integrador Externo"
 
 - É uma loja comum da conta: aparece em `GET /stores` com o nome `Integrador Externo` e um `externalId` gerado pela Zoppy. Identifique o `id` dela pelo nome.
 - Se a conta ainda não tem essa loja, a Zoppy a cria no primeiro pedido que precisar dela.
 - Pedido nela costuma ser pedido de filial que não foi identificada: `storeId` ausente, `store` com nome diferente do cadastrado ou com espaço sobrando.
+- Ela é uma só por conta: recebe os pedidos sem loja de qualquer integração que use a Partners API na conta, não só os seus.
 
 ## Conferência depois da carga
 
@@ -124,16 +134,18 @@ A listagem de pedidos não filtra por loja. Conte do seu lado:
 ## Corrigir pedidos gravados na loja errada
 
 O `PUT /orders/{id}` com o `storeId` certo troca a loja do pedido. Total, desconto, frete, status,
-datas, itens, cupom, vendedor, `provider` e `externalId` ficam como estavam, **desde que o `PUT` leve o
-pedido inteiro**: o `PUT` é reenvio completo (skill `zoppy-partners-pedidos`). Um `PUT` só com
+datas, conteúdo dos itens, cupom, vendedor, `provider` e `externalId` ficam como estavam, **desde que o
+`PUT` leve o pedido inteiro**: o `PUT` é reenvio completo (skill `zoppy-partners-pedidos`). Os itens são
+recriados com outro `id` e o `updatedAt` do pedido vira a hora do `PUT`: quem guardou o `id` do item ou
+sincroniza por `updatedAt` vai ver esses pedidos de novo. Um `PUT` só com
 `storeId` responde 400; um `PUT` sem `discount`, `shipping` ou `lineItems` grava total 0 ou apaga os itens.
 
 Procedimento em lote:
 
 1. Ache o `id` da loja padrão e o `storeId` certo de cada filial (seção anterior).
-2. Liste os pedidos do período (`GET /orders?after=...`) e separe os que estão com o `storeId` da loja padrão. Para cada um, descubra a filial pelo `externalId` do pedido no seu sistema.
+2. Liste os pedidos do período (`GET /orders?after=...`) e separe os que estão com o `storeId` da loja padrão. Para cada um, descubra a filial pelo `externalId` do pedido no seu sistema. **Só mexa em pedido cujo `externalId` existe no seu sistema**: a loja padrão é compartilhada por todas as integrações da conta, e um pedido dela que você não reconhece é de outra integração. Não altere; leve ao time da Zoppy.
 3. Para cada pedido, leia `GET /orders/{id}` e monte o `PUT` a partir da leitura: `status`, `subtotal`, `discount`, `shipping`, `createdAt`, `completedAt` (se `completed`), `lineItems` (`productId` e `quantity` de cada item) e o `storeId` certo. **Não mande `couponCode`** (ausente mantém o cupom; um código que não existe na Zoppy faz o `PUT` responder 422), nem vendedor nem `provider` (ausentes, mantêm).
-4. Valide com `node <pasta da skill zoppy-partners-pedidos>/scripts/validate.mjs --schema=pedido.update`.
+4. Valide com `node <pasta da skill zoppy-partners-pedidos>/scripts/validate.mjs --schema=pedido.update`. Num corpo montado da leitura, o AVISO de conferência do frete aparece em todo pedido com frete e é esperado: o `subtotal` lido de volta já inclui o frete.
 5. Espere alguns segundos e leia de novo: confira `storeId`, `total`, `createdAt` e a quantidade de itens contra a leitura do passo 3. Se não refletiu, reenvie.
 6. Vá devagar (um pedido por vez ou pouco paralelismo) e guarde um relatório pedido → loja antiga → loja nova.
 
@@ -172,6 +184,6 @@ o usuário pedir, com as três variáveis de ambiente de uma conta de teste e a 
 skill (os caminhos abaixo são relativos a ela). Os que gravam dados usam o prefixo `skills-test-` e
 apagam o que criaram.
 
-- `assets/examples/01-filiais-e-pedidos.mjs`: cadastra 3 filiais sem duplicar (reaproveita a que já existe pelo código), manda um pedido para cada uma por `storeId` e confere a loja na leitura.
-- `assets/examples/02-corrigir-loja-padrao.mjs`: pedido que caiu no "Integrador Externo" é corrigido com `PUT` completo, conferindo que só a loja mudou.
+- `assets/examples/01-filiais-e-pedidos.mjs`: cadastra 3 filiais sem duplicar: reaproveita sozinho só o mapa salvo da integração, devolve "a confirmar" as lojas de outra integração com o mesmo código ou nome (sem diferenciar maiúsculas e acentos), cria só a que falta, manda um pedido para cada filial por `storeId` e confere a loja na leitura.
+- `assets/examples/02-corrigir-loja-padrao.mjs`: pedido que caiu no "Integrador Externo" (e que existe no seu sistema) é corrigido com `PUT` completo, conferindo que só a loja mudou.
 - `references/casos-de-borda.md`: cada caso de loja e de escolha da loja com o envio e o resultado reais.
