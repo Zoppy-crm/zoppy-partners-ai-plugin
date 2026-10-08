@@ -7,7 +7,7 @@ description: "Explica o que vale para todos os recursos da Partners API da Zoppy
 
 **Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
 1. Antes de entregar código ou de chamar a API, rode você mesmo, no terminal, o `scripts/validate.mjs` da skill do recurso em cada corpo de `POST` e `PUT` (também os que um script vai montar) e leia cada `ERRO` e `AVISO`. Não deixe essa etapa para o usuário.
-2. Em teste, todo dado leva o prefixo do usuário inteiro, sem abreviar, no `externalId`, no nome e no `code` do cupom.
+2. Em teste, todo dado leva o prefixo do usuário inteiro, sem abreviar, no `externalId`, no nome e no `code` do cupom. Na limpeza, apague só o que você criou, pelo identificador que guardou ao criar; nunca por filtro de nome, código ou prefixo, porque outra integração pode ter dado parecido na mesma conta. Se uma execução quebrar antes de guardar os identificadores, ache as sobras pelo `externalId` exato de cada recurso (`GET /<recurso>/external/{externalId}`), nunca filtrando uma listagem com `includes`.
 3. Nunca invente dado que o usuário não deu (horário, compra mínima, loja, vendedor): pergunte, ou deixe o campo de fora e avise.
 4. Depois do `POST` de um pedido, espere alguns segundos e releia antes de um `PUT` nele: um `PUT` logo em seguida pode ser desfeito.
 5. Releia com `GET` o que gravou e compare com o que mandou; diga ao usuário só o que essa leitura mostrou.
