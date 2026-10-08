@@ -19,4 +19,5 @@ Valem quando a tarefa envolve a Partners API da Zoppy.
 - Todo dado criado em desenvolvimento, teste ou descoberta, inclusive a chamada feita só para ver o
   formato de uma resposta, leva o prefixo ou a marcação que o usuário definiu e é apagado no fim.
   Pedidos podem disparar automações da conta que criam cupom ou giftback para o cliente: liste e
-  apague esses cupons também.
+  apague esses cupons também. A limpeza apaga pelo identificador guardado na criação, nunca por
+  filtro de nome, código ou prefixo: outra integração pode ter dado parecido na mesma conta.
