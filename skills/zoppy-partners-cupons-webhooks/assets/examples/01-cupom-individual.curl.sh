@@ -45,7 +45,7 @@ for _ in $(seq 1 20); do
     if [ "$(status_of "/customers/phone/$CANDIDATE")" != "200" ]; then PHONE="$CANDIDATE"; break; fi
 done
 [ -n "$PHONE" ] || { echo "nenhum telefone de teste livre" >&2; exit 1; }
-CUSTOMER_ID=$(zoppy POST /customers "{\"externalId\":\"$RUN_ID-cliente\",\"firstName\":\"$RUN_ID\",\"lastName\":\"Cupom\",\"phone\":\"$PHONE\",\"email\":\"skills-test+2@zoppy.com.br\",\"address\":{\"address1\":\"Rua Teste 1\",\"city\":\"Sao Paulo\",\"state\":\"SP\",\"postcode\":\"01001000\"}}" | field id)
+CUSTOMER_ID=$(zoppy POST /customers "{\"externalId\":\"$RUN_ID-cliente\",\"firstName\":\"$RUN_ID\",\"lastName\":\"Cupom\",\"phone\":\"$PHONE\",\"email\":\"skills-test+2@example.com\",\"address\":{\"address1\":\"Rua Teste 1\",\"city\":\"Sao Paulo\",\"state\":\"SP\",\"postcode\":\"01001000\"}}" | field id)
 
 # 2. Cadastrar o cupom com tipo, mínimo, validade e awaitingOrder explícitos
 COUPON_ID=$(zoppy POST /coupons "{\"externalId\":\"$RUN_ID-cupom\",\"code\":\"$CODE\",\"phone\":\"$PHONE\",\"type\":\"percent\",\"amount\":10,\"minPurchaseValue\":50,\"expiryDate\":\"2027-12-31T23:59:59-03:00\",\"awaitingOrder\":false}" | field id)

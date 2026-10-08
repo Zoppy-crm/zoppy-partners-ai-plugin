@@ -20,5 +20,5 @@ FAIL se falta qualquer critério de acerto ou se aparece qualquer erro que repro
 - É idempotente por `code` (o mesmo cupom pode chegar mais de uma vez por causa do reenvio).
 - Devolve o ID do PDV com `PUT /coupons/code/{code}` e `{"externalId": "<id do PDV>"}`.
 - Não usa `createCoupon` no pedido nem `POST /coupons` para esse fluxo.
-- No PDV, cobra `minPurchaseValue` e a validade do cupom (a Zoppy não confere o mínimo quando o
-  pedido chega com `couponCode`).
+- No PDV, cobra `minPurchaseValue` e a validade do cupom (são aplicados no checkout do
+  parceiro).

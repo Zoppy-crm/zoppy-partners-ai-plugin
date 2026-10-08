@@ -49,7 +49,7 @@ campo certo que ficou faltando.
 Sem `zoppy-access` ou com valor errado. Resposta da camada de borda, antes da API:
 `Content-Type: text/html; charset=UTF-8`, corpo começando com
 `<!DOCTYPE html><html lang="en-US"><head><title>Just a moment...</title>`. Acontece em qualquer
-rota, inclusive a documentação, e também quando os dois headers faltam.
+rota e também quando os dois headers faltam.
 
 ## 404 Not Found
 
@@ -88,11 +88,9 @@ vírgula.
 ## 500 Internal Server Error
 
 Falha não tratada. O corpo não diz a causa:
-`{"statusCode":500,"message":"Internal server error"}`. Exemplo observado:
-`PUT /abandoned-carts/{id}` sem o campo `url`, e listagem com `pageSize` decimal (`pageSize=2.5`). Confira o payload contra o schema da skill do
-recurso antes de tentar de novo.
+`{"statusCode":500,"message":"Internal server error"}`. Confira o payload contra o schema da
+skill do recurso antes de tentar de novo.
 
 ## 429
 
-Não observado: 40 requisições paralelas responderam 200. Se aparecer, espere e repita com
-intervalo crescente.
+Se aparecer, espere e repita com intervalo crescente.

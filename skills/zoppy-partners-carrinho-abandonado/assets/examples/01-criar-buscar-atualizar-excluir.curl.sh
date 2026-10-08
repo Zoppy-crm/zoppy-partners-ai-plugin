@@ -44,7 +44,7 @@ for _ in $(seq 1 20); do
 done
 [ -n "$PHONE" ] || { echo "nenhum telefone livre na faixa 11900003000 a 11900003999" >&2; exit 1; }
 
-CUSTOMER=$(zoppy POST /customers "{\"externalId\":\"$RUN_ID-cliente\",\"firstName\":\"Teste\",\"lastName\":\"Carrinho\",\"phone\":\"$PHONE\",\"email\":\"skills-test+${PHONE: -4}@zoppy.com.br\",\"address\":{\"address1\":\"Rua Exemplo 1\",\"city\":\"Sao Paulo\",\"state\":\"SP\",\"postcode\":\"01001000\"}}")
+CUSTOMER=$(zoppy POST /customers "{\"externalId\":\"$RUN_ID-cliente\",\"firstName\":\"Teste\",\"lastName\":\"Carrinho\",\"phone\":\"$PHONE\",\"email\":\"skills-test+${PHONE: -4}@example.com\",\"address\":{\"address1\":\"Rua Exemplo 1\",\"city\":\"Sao Paulo\",\"state\":\"SP\",\"postcode\":\"01001000\"}}")
 expect "cliente criado por este exemplo" "$(echo "$CUSTOMER" | json_field externalId)" "$RUN_ID-cliente"
 CUSTOMER_ID=$(echo "$CUSTOMER" | json_field id)
 PRODUCT_ID=$(zoppy POST /products "{\"externalId\":\"$RUN_ID-produto\",\"name\":\"$RUN_ID produto\",\"price\":50,\"status\":\"publish\"}" | json_field id)

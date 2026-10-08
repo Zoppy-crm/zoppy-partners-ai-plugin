@@ -36,9 +36,7 @@ Trate `message` como lista ou texto conforme o status.
 | GET lista | `after` ausente ou inválido | 422 | `Invalid after date` |
 | GET lista | `page` ausente ou não numérico / menor que 1 | 422 | `Page parameter is required` / `Page needs to be bigger than 0` |
 | GET lista | `pageSize` ausente / 0 / maior que 50 | 422 | `Page size parameter is required` / `Page size needs to be bigger than 0` / `Page size needs to be less than or equal 50` |
-| GET lista | `pageSize` decimal (`1.5`) | 500 | sem detalhe |
 | GET lista | `updatedAt` inválido | 422 | `Invalid updatedAt date` |
-| PUT | `url` ausente | 500 | sem detalhe; nada é alterado |
 | POST, PUT | `lineItems` que não é lista, item `null` ou sem `productId` | 500 | sem detalhe; já gravou (ver abaixo) |
 
 ## Aceito, mas gravado diferente do esperado

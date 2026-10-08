@@ -126,12 +126,11 @@ Mesmos campos, com estas diferenças:
 
 ## Regras que mais causam erro
 
-**1. `awaitingOrder` ausente vale `true` e um pedido sem código consome o cupom, mesmo já usado.**
+**1. `awaitingOrder` ausente vale `true`: registre `false` se o resgate é pelo código.**
 Com `awaitingOrder` ligado, o próximo pedido do mesmo telefone que chegar sem `couponCode` recebe
-o cupom mais recente desse telefone que ainda tem `awaitingOrder` ligado, sem conferir validade
-nem se ele já foi usado: o pedido ganha o `couponCode`, o cupom vira `used: true` e, se o pedido
-veio com `discount` 0, a Zoppy preenche o desconto pelo cupom. Dois casos em que o mesmo cupom
-desconta duas vezes:
+o cupom mais recente desse telefone que ainda tem `awaitingOrder` ligado: o pedido ganha o
+`couponCode`, o cupom vira `used: true` e, se o pedido veio com `discount` 0, a Zoppy preenche o
+desconto pelo cupom. Dois casos em que o mesmo cupom desconta duas vezes:
 - você marca o cupom como usado com `PUT {"used": true}`: ele continua aguardando e o próximo
   pedido sem código recebe esse cupom de novo;
 - o cupom é baixado por `couponCode` enquanto há um cupom mais novo aguardando no mesmo telefone:
@@ -143,13 +142,12 @@ sem código chegou depois e não recebeu o cupom.
 
 **2. O telefone é gravado como veio.** `"+55 (11) 98765-4321"` fica gravado assim, e
 `GET`/`PUT`/`DELETE /coupons/phone/{phone}` só acham o cupom com o mesmo texto. Mande só dígitos
-e consulte com os mesmos dígitos.
+e consulte com os mesmos dígitos. Use o telefone que a Zoppy devolveu no cadastro do cliente
+(`customer.phone`): no cliente ela acrescenta o 9 em celular de 8 dígitos, no cupom não.
 
 **3. No compartilhado, `externalId` texto não é preservado.** O texto vira o número do começo
-dele (`"123abc"` vira `123`) ou `0` se não começa com dígito, sempre com resposta 200. Enquanto
-existir na conta um compartilhado com `externalId` `0`, qualquer busca
-`GET /coupons/external/{texto}` que não ache um cupom individual devolve esse compartilhado em vez
-de 404.
+dele (`"123abc"` vira `123`) ou `0` se não começa com dígito, sempre com resposta 200. No
+compartilhado o identificador é numérico e não é único: consulte o compartilhado pelo `code`.
 
 ```jsonc
 // Errado: responde 200 e grava externalId 0
@@ -195,9 +193,8 @@ O resgate é informado no pedido, no campo `couponCode` (skill zoppy-partners-pe
 - `POST /orders` aceita `couponCode` que não existe (200, `couponUsed: null`). Já
   `PUT /orders/{id}` recusa com 422 `Coupon code not found`, inclusive para código de cupom
   compartilhado.
-- A Zoppy não confere `minPurchaseValue` ao baixar o cupom: um pedido de 100 com um giftback de
-  mínimo 120 foi aceito, o cupom virou `used: true` e o `discount` 0 do pedido virou 30. Aplique
-  as regras do cupom (mínimo e validade) no seu checkout.
+- A Zoppy registra o resgate informado no pedido. Mínimo de compra e validade são aplicados no seu
+  checkout: confira os dois antes de aceitar o código.
 - Depois de usado, o cupom continua aparecendo em `GET /coupons/code/{code}` com `used: true` e
   `isValid: false`, e sai das buscas por telefone. Isso não impede que ele seja aplicado de novo
   a um pedido sem código (regra 1).
@@ -208,15 +205,14 @@ Cadastro, um por conta:
 
 - `POST /webhooks` com `event` (único valor aceito: `coupon_create`), `url` e, opcional,
   `bearerToken`. Evento diferente ou ausente dá 422 `Tipo de evento inválido`; sem `url`, 422
-  `URL obrigatória`; `url` que não é texto dá 400 `["url must be a string"]`. A `url` não é
-  validada além disso e é gravada com até 255 caracteres: acima disso é cortada sem aviso (a
+  `URL obrigatória`; `url` que não é texto dá 400 `["url must be a string"]`. Use uma URL https
+  pública que responda rápido, com até 255 caracteres: acima disso ela é cortada sem aviso (a
   resposta do `POST` mostra a URL inteira, `GET /webhooks` mostra a cortada).
 - Um segundo `POST /webhooks` para o mesmo evento não cria outro cadastro: substitui `url` e
   `bearerToken` do existente (mesmo `id`). Sem `bearerToken`, o token salvo é apagado.
 - `PUT /webhooks/{id}` exige `event` e `url` de novo; `id` inexistente dá 404
   `Configuração de webhook não encontrada`, assim como `DELETE`.
-- `GET /webhooks` devolve a lista com `bearerToken` em texto. Cadastrar a URL não dispara
-  chamada nenhuma.
+- Guarde o `bearerToken` do seu lado. Cadastrar a URL não dispara chamada nenhuma.
 
 O que a Zoppy envia quando gera um cupom, por exemplo por um fluxo de automação:
 

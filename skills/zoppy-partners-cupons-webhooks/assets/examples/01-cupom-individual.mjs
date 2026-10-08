@@ -57,7 +57,7 @@ try {
         firstName: runId,
         lastName: 'Cupom',
         phone,
-        email: 'skills-test+1@zoppy.com.br',
+        email: 'skills-test+1@example.com',
         address: { address1: 'Rua Teste 1', city: 'Sao Paulo', state: 'SP', postcode: '01001000' }
     });
     customerId = customer.id;

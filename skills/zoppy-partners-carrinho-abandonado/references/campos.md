@@ -37,7 +37,7 @@ Mesmo formato do POST sem `externalId` e `customerId`.
 |---|---|
 | `subtotal` | obrigatório (400 se ausente); total recalculado com `discount` e `shipping` |
 | `discount`, `shipping` | ausentes: total gravado vira `0` e a resposta do PUT traz `total` `null`; sem `discount`, o desconto anterior continua gravado |
-| `url` | a chave é obrigatória: ausente responde 500 e nada é alterado. `""` ou só espaços responde 200 e grava `""`, apagando o link de recuperação |
+| `url` | a chave é obrigatória também no `PUT`. `""` ou só espaços responde 200 e grava `""`, apagando o link de recuperação |
 | `lineItems` | apaga os itens atuais e grava a lista enviada; ausente deixa o carrinho sem itens. Lista inválida (não lista, item `null` ou sem `productId`) responde 500 depois de trocar valores e `url` e apagar os itens antigos; ficam só os itens anteriores ao inválido |
 | `externalId`, `customerId`, `createdAt`, `updatedAt` | ignorados quando válidos; os valores atuais continuam. `createdAt` ou `updatedAt` inválido: 400 |
 
@@ -85,7 +85,7 @@ Exemplo lido de volta de um envio com `subtotal 100, discount 10, shipping 20`:
 |---|---|---|
 | `after` | sim | carrinhos com `createdAt >= after`. Aceita `2026-10-01` ou data e hora com fuso. Ausente ou inválido: 422 `Invalid after date` |
 | `page` | sim | a partir de 1. Ausente ou não numérico (`abc`): 422 `Page parameter is required`; 0: 422 `Page needs to be bigger than 0` |
-| `pageSize` | sim | inteiro de 1 a 50. Ausente: 422 `Page size parameter is required`; 0: 422 `Page size needs to be bigger than 0`; 51: 422 `Page size needs to be less than or equal 50`; decimal (`1.5`): 500 |
+| `pageSize` | sim | inteiro de 1 a 50. Ausente: 422 `Page size parameter is required`; 0: 422 `Page size needs to be bigger than 0`; 51: 422 `Page size needs to be less than or equal 50` |
 | `updatedAt` | não | carrinhos com `updatedAt >= updatedAt`. Inválido: 422 `Invalid updatedAt date` |
 
 Resposta: `{"data":[...],"pagination":{"page":1,"pageSize":50,"totalRecords":5,"totalPages":1}}`.

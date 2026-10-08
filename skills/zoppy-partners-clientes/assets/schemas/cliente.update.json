@@ -1,5 +1,5 @@
 {
-    "description": "Corpo do PUT /customers/{id} da Partners API (atualizar cliente). O PUT exige os mesmos campos do POST; sem address a API responde 500. As regras em cliente.update.rules.mjs avisam o que ela aceita mas grava diferente do esperado.",
+    "description": "Corpo do PUT /customers/{id} da Partners API (atualizar cliente). O PUT exige os mesmos campos do POST, inclusive address. As regras em cliente.update.rules.mjs avisam o que ela aceita mas grava diferente do esperado.",
     "type": "object",
     "required": [
         "phone",
@@ -44,7 +44,7 @@
         },
         "address": {
             "type": "object",
-            "description": "Endereço. Obrigatório no PUT (sem ele a API responde 500). Campo omitido mantém o valor atual; null apaga address1, city, state e postcode.",
+            "description": "Endereço. Obrigatório também no PUT. Campo omitido mantém o valor atual; null apaga address1, city, state e postcode.",
             "properties": {
                 "address1": {
                     "description": "Rua e número. Omitido mantém; null apaga."

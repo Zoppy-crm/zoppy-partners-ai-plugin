@@ -27,7 +27,7 @@
         "url": {
             "type": "string",
             "minLength": 1,
-            "description": "Link de recuperação. A chave é obrigatória no PUT: sem ela a API responde 500 e nada muda. Vazia ou só espaços responde 200 e apaga o link."
+            "description": "Link de recuperação. A chave é obrigatória no PUT. Vazia ou só espaços responde 200 e apaga o link."
         },
         "lineItems": {
             "type": "array",

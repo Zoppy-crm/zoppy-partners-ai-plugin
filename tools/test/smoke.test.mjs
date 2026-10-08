@@ -38,3 +38,26 @@ test('--skill filtra', () => {
     const root = repoWith({ 'skills/a/assets/examples/01.mjs': 'throw new Error("a")', 'skills/b/assets/examples/01.mjs': '' });
     assert.equal(spawnSync('node', [smoke, '--skill=b'], { cwd: root, env, encoding: 'utf8' }).status, 0);
 });
+
+test('URL de produção recusa sem ZOPPY_SMOKE_ALLOW_PRODUCTION=1 e não roda exemplo', () => {
+    const root = repoWith({ 'skills/a/assets/examples/01.mjs': 'throw new Error("rodou")' });
+    const production = { ...env, ZOPPY_PARTNERS_BASE_URL: 'https://api-partners.zoppy.com.br' };
+    const r = spawnSync('node', [smoke], { cwd: root, env: production, encoding: 'utf8' });
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /ZOPPY_SMOKE_ALLOW_PRODUCTION=1/);
+    assert.doesNotMatch(r.stdout + r.stderr, /rodou/);
+});
+
+test('URL de produção com barra final ou maiúsculas também recusa', () => {
+    const root = repoWith({ 'skills/a/assets/examples/01.mjs': '' });
+    const production = { ...env, ZOPPY_PARTNERS_BASE_URL: 'https://API-Partners.zoppy.com.br/' };
+    assert.equal(spawnSync('node', [smoke], { cwd: root, env: production, encoding: 'utf8' }).status, 2);
+});
+
+test('produção com ZOPPY_SMOKE_ALLOW_PRODUCTION=1 roda; staging roda sem a variável', () => {
+    const root = repoWith({ 'skills/a/assets/examples/01.mjs': '' });
+    const allowed = { ...env, ZOPPY_PARTNERS_BASE_URL: 'https://api-partners.zoppy.com.br', ZOPPY_SMOKE_ALLOW_PRODUCTION: '1' };
+    assert.equal(spawnSync('node', [smoke], { cwd: root, env: allowed, encoding: 'utf8' }).status, 0);
+    const staging = { ...env, ZOPPY_PARTNERS_BASE_URL: 'https://api-partners-staging.zoppy.com.br' };
+    assert.equal(spawnSync('node', [smoke], { cwd: root, env: staging, encoding: 'utf8' }).status, 0);
+});

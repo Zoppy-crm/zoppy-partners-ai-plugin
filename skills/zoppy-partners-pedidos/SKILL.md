@@ -50,7 +50,7 @@ O `total` gravado é o valor dos produtos com desconto, **sem frete**. Por isso:
 
 Na resposta, `total` é o valor gravado e `subtotal` é recalculado como `total + discount + shipping`.
 
-| Pedido real | Payload certo | `total` gravado |
+| Exemplo | Payload certo | `total` gravado |
 |---|---|---|
 | Itens 131,60, frete 20, desconto 7,58 | `subtotal 151.60, discount 7.58, shipping 20` | 124,02 |
 | Mesmo pedido com `subtotal` só dos itens (errado) | `subtotal 131.60, discount 7.58, shipping 20` | 104,02 |
