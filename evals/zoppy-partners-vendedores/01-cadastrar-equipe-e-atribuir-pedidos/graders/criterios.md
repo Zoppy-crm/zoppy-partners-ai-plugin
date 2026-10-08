@@ -13,7 +13,7 @@ FAIL se falta qualquer critério de acerto ou se aparece qualquer erro que repro
 - Antes de criar, lista os usuários da conta (`GET /users`, todas as páginas) e reaproveita o `id` de quem já existe pelo e-mail (comparando sem diferenciar maiúsculas).
 - Cria só os que faltam com `POST /users` mandando `email`, `name`, `phone` e `password` (senha com 6 ou mais caracteres, minúscula, maiúscula, número e símbolo).
 - Converte o celular para só dígitos, DDD + número, sem 55 e sem máscara (`11987654321`), e explica que gravado com `+55` ou máscara o vendedor não é achado por `seller.phone`.
-- Manda a matrícula em `revenueRecord`.
+- Manda a matrícula em `revenueRecord` e omite o campo quando a matrícula está vazia (`""` é gravado e passa a casar com `seller.revenueRecord: ""`).
 - Trata `422 User email already in use.` para e-mail fora da listagem como e-mail usado em outra conta Zoppy ou por usuário excluído, sem tentar de novo em loop.
 - Atribui o pedido por `userId` (o `id` guardado) ou `seller.email`.
 - Avisa que vendedor não encontrado não dá erro: o pedido fica sem vendedor.

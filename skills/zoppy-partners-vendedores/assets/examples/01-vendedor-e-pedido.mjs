@@ -2,7 +2,7 @@
 // Exemplo: cadastrar um vendedor (telefone só em dígitos) e atribuir pedidos a ele por userId,
 // seller.email e seller.phone, conferindo o vendedor gravado na leitura.
 // Requer ZOPPY_PARTNERS_TOKEN, ZOPPY_ACCESS e ZOPPY_PARTNERS_BASE_URL.
-// O e-mail de um vendedor excluído não pode ser usado de novo: cada execução usa um e-mail novo.
+// O e-mail de um vendedor excluído não pode ser usado de novo: cada execução usa um e-mail novo, em @example.com.
 const missing = ['ZOPPY_PARTNERS_TOKEN', 'ZOPPY_ACCESS', 'ZOPPY_PARTNERS_BASE_URL'].filter((name) => !process.env[name]);
 if (missing.length) {
     console.error(`Defina as variáveis de ambiente: ${missing.join(', ')}`);
@@ -39,7 +39,8 @@ async function freeTestPhone() {
     for (let attempt = 0; attempt < 20; attempt++) {
         const phone = `11900082${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
         const { status } = await request('GET', `/customers/phone/${phone}`);
-        if (status !== 200) return phone;
+        if (status === 422) return phone; // 422 Customer not found: telefone livre
+        if (status !== 200) throw new Error(`GET /customers/phone respondeu ${status}`);
     }
     throw new Error('não achei telefone de teste livre');
 }
@@ -50,7 +51,7 @@ const created = { orders: [] };
 async function main() {
     // 1. Vendedor com telefone só em dígitos (DDD + 9 + 8 dígitos, sem 55): é assim que o pedido o acha por telefone.
     const sellerPhone = `11900083${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
-    const email = `skills-test+${Date.now()}@zoppy.com.br`;
+    const email = `${runId}@example.com`; // domínio reservado para teste; o e-mail fica bloqueado depois do DELETE
     const seller = await zoppy('POST', '/users', { email, name: `${runId} vendedora`, phone: sellerPhone, password: 'Skills@123', revenueRecord: `${runId}-mat` });
     created.userId = seller.id;
     expectEqual('perfil do vendedor', seller.role, 'COMMON');
@@ -75,7 +76,7 @@ async function main() {
         ['seller.email em maiúsculas', { seller: { email: email.toUpperCase() } }, seller.id],
         ['seller.phone com +55 e máscara', { seller: { phone: `+55 (${sellerPhone.slice(0, 2)}) ${sellerPhone.slice(2, 7)}-${sellerPhone.slice(7)}` } }, seller.id],
         ['seller.revenueRecord', { seller: { revenueRecord: `${runId}-mat` } }, seller.id],
-        ['e-mail que não existe', { seller: { email: `nao-existe-${Date.now()}@zoppy.com.br` } }, null]
+        ['e-mail que não existe', { seller: { email: `${runId}-nao-existe@example.com` } }, null]
     ];
     for (const [label, sellerFields, expected] of cases) {
         const order = await zoppy('POST', '/orders', {
