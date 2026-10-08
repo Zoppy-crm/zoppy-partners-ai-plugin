@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "required": ["email", "name", "phone", "password"],
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "E-mail do vendedor; único em toda a Zoppy, inclusive usuários excluídos"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nome do vendedor"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Celular com DDD e 9, só dígitos e sem 55 (ex. 11987654321)"
+    },
+    "password": {
+      "type": "string",
+      "description": "6 ou mais caracteres com minúscula, maiúscula, número e símbolo"
+    },
+    "nickName": {
+      "type": "string",
+      "description": "Apelido; ausente grava o name"
+    },
+    "revenueRecord": {
+      "type": "string",
+      "description": "Código do vendedor no seu sistema; o pedido acha o vendedor por ele em seller.revenueRecord"
+    }
+  }
+}

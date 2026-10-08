@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "externalId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Código da filial no seu sistema; ausente mantém o gravado"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nome da loja, gravado como veio (sem trim)"
+    },
+    "isEcommerce": {
+      "type": "boolean",
+      "description": "Ausente no PUT grava false; envie sempre"
+    }
+  }
+}

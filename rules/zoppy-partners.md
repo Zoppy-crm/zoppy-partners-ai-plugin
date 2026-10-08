@@ -8,7 +8,7 @@ description: Regras gerais para qualquer tarefa com a Partners API da Zoppy (cre
 Valem quando a tarefa envolve a Partners API da Zoppy.
 
 - Leia primeiro a skill `zoppy-partners-api` e depois a skill do recurso (clientes, produtos,
-  pedidos, carrinho abandonado, cupons e webhooks).
+  pedidos, lojas, vendedores, carrinho abandonado, cupons e webhooks).
 - Antes de enviar ou de devolver código que monta um payload, rode o validador da skill do recurso
   (`scripts/validate.mjs --schema=<nome>`) em todo corpo de `POST` e `PUT`, de todos os recursos, e
   corrija todo ERRO.

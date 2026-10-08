@@ -22,7 +22,7 @@
     },
     "storeId": {
       "type": "string",
-      "description": "Id da loja na Zoppy; precisa existir e estar ativa"
+      "description": "Id da loja na Zoppy; precisa existir e estar ativa. Texto vazio, sem store, manda o pedido para a loja padrão"
     },
     "store": {
       "type": "object",

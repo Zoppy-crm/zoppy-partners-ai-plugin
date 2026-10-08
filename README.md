@@ -14,6 +14,8 @@ traz exemplos executáveis e um validador de payload que a IA roda antes de devo
 | `zoppy-partners-clientes` | Criar, atualizar e buscar clientes; telefone, endereço e deduplicação. |
 | `zoppy-partners-produtos` | Criar, atualizar e buscar produtos; vínculo com os itens do pedido. |
 | `zoppy-partners-pedidos` | Pedidos: status, `subtotal`/`discount`/`shipping`, datas, reenvio pelo `PUT`. |
+| `zoppy-partners-lojas` | Lojas e filiais: reaproveitar as existentes, `storeId` no pedido, loja padrão "Integrador Externo" e correção de pedidos na loja errada. |
+| `zoppy-partners-vendedores` | Vendedores: cadastro, e-mail único, telefone e como o pedido acha o vendedor (`userId` ou `seller`). |
 | `zoppy-partners-carrinho-abandonado` | Carrinhos abandonados e a recuperação. |
 | `zoppy-partners-cupons-webhooks` | Cupons (individual e compartilhado) e webhooks de cupom criado. |
 
