@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Exemplo: ciclo do carrinho abandonado (criar, buscar, atualizar, excluir), conferindo cada leitura de volta.
 // Requer ZOPPY_PARTNERS_TOKEN, ZOPPY_ACCESS e ZOPPY_PARTNERS_BASE_URL.
 const missing = ['ZOPPY_PARTNERS_TOKEN', 'ZOPPY_ACCESS', 'ZOPPY_PARTNERS_BASE_URL'].filter((name) => !process.env[name]);
@@ -9,12 +10,17 @@ if (missing.length) {
 
 const BASE_URL = process.env.ZOPPY_PARTNERS_BASE_URL;
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function request(method, path, body) {
     const response = await fetch(`${BASE_URL}${path}`, {
         method,
         headers: {
             Authorization: `Bearer ${process.env.ZOPPY_PARTNERS_TOKEN}`,
-            'zoppy-access': process.env.ZOPPY_ACCESS,
+            'zoppy-access': /** @type {string} */ (process.env.ZOPPY_ACCESS),
             'Content-Type': 'application/json'
         },
         body: body === undefined ? undefined : JSON.stringify(body)
@@ -23,18 +29,29 @@ async function request(method, path, body) {
     return { status: response.status, text, data: text ? JSON.parse(text) : null };
 }
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function zoppy(method, path, body) {
     const { status, text, data } = await request(method, path, body);
     if (status < 200 || status >= 300) throw new Error(`${method} ${path} respondeu ${status}: ${text}`);
     return data;
 }
 
+/**
+ * @param {string} label
+ * @param {unknown} actual
+ * @param {unknown} expected
+ */
 function expectEqual(label, actual, expected) {
     if (actual !== expected) throw new Error(`${label}: esperado ${JSON.stringify(expected)}, veio ${JSON.stringify(actual)}`);
 }
 
 const runId = `skills-test-zoppy-partners-carrinho-abandonado-${Date.now()}`;
 let phone = '';
+/** @type {{ cartId: string | null, customerId: string | null, productId: string | null }} */
 const created = { cartId: null, customerId: null, productId: null };
 
 async function freePhone() {
@@ -47,6 +64,7 @@ async function freePhone() {
     throw new Error('nenhum telefone livre encontrado na faixa 11900003000 a 11900003999');
 }
 
+/** @param {string} lastName */
 async function createCustomer(lastName) {
     phone = await freePhone();
     const customer = await zoppy('POST', '/customers', {
@@ -84,6 +102,12 @@ async function createCart() {
     return cart;
 }
 
+/**
+ * Carrinho como a API devolve na leitura (só os campos conferidos aqui).
+ * @typedef {{ total: number, discount: number, subtotal: number, shipping: number, createdAt: string, lineItems: Array<{ productId: string }>, customer: { id: string } }} AbandonedCart
+ */
+
+/** @param {AbandonedCart} cart */
 function checkCreated(cart) {
     expectEqual('total gravado', cart.total, 90);
     expectEqual('discount', cart.discount, 10);
@@ -95,6 +119,7 @@ function checkCreated(cart) {
     expectEqual('cliente', cart.customer.id, created.customerId);
 }
 
+/** @param {number} expectedTotal */
 async function readBack(expectedTotal) {
     const byId = await zoppy('GET', `/abandoned-carts/${created.cartId}`);
     expectEqual('GET por id: total', byId.total, expectedTotal);

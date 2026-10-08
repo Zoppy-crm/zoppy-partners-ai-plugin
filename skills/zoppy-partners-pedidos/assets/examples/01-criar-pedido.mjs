@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 // Exemplo: criar pedido com frete e desconto e conferir o total gravado.
 // Itens 131,60 + frete 20 - desconto 7,58: subtotal 151,60 (com frete), total gravado 124,02 (sem frete).
 // Requer ZOPPY_PARTNERS_TOKEN, ZOPPY_ACCESS e ZOPPY_PARTNERS_BASE_URL.
@@ -10,12 +11,17 @@ if (missing.length) {
 
 const BASE_URL = process.env.ZOPPY_PARTNERS_BASE_URL;
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function request(method, path, body) {
     const response = await fetch(`${BASE_URL}${path}`, {
         method,
         headers: {
             Authorization: `Bearer ${process.env.ZOPPY_PARTNERS_TOKEN}`,
-            'zoppy-access': process.env.ZOPPY_ACCESS,
+            'zoppy-access': /** @type {string} */ (process.env.ZOPPY_ACCESS),
             'Content-Type': 'application/json'
         },
         body: body === undefined ? undefined : JSON.stringify(body)
@@ -24,17 +30,28 @@ async function request(method, path, body) {
     return { status: response.status, data: text ? JSON.parse(text) : null, text };
 }
 
+/**
+ * @param {string} method
+ * @param {string} path
+ * @param {unknown} [body]
+ */
 async function zoppy(method, path, body) {
     const { status, data, text } = await request(method, path, body);
     if (status < 200 || status >= 300) throw new Error(`${method} ${path} respondeu ${status}: ${text}`);
     return data;
 }
 
+/**
+ * @param {string} label
+ * @param {unknown} actual
+ * @param {unknown} expected
+ */
 function expectEqual(label, actual, expected) {
     if (actual !== expected) throw new Error(`${label}: esperado ${JSON.stringify(expected)}, veio ${JSON.stringify(actual)}`);
 }
 
 // A Zoppy grava valores com ponto flutuante: compare em centavos.
+/** @type {(value: number) => number} */
 const cents = (value) => Math.round(value * 100);
 
 async function freeTestPhone() {
@@ -47,6 +64,7 @@ async function freeTestPhone() {
 }
 
 const runId = `skills-test-zoppy-partners-pedidos-${Date.now()}`;
+/** @type {{ customerId?: string, productId?: string, orderId?: string }} */
 const created = {};
 
 async function main() {
@@ -90,7 +108,7 @@ async function main() {
     expectEqual('subtotal devolvido (total + discount + shipping)', cents(byId.subtotal), cents(items + shipping));
     expectEqual('createdAt é a data da venda', byId.createdAt, '2026-09-05T13:26:00.000Z');
     expectEqual('completedAt é a data do pagamento', byId.completedAt, '2026-09-09T17:00:00.000Z');
-    expectEqual('itens', byId.lineItems.map((item) => `${item.productId}:${item.quantity}`).join(','), `${product.id}:2`);
+    expectEqual('itens', byId.lineItems.map((/** @type {{ productId: string, quantity: number }} */ item) => `${item.productId}:${item.quantity}`).join(','), `${product.id}:2`);
     expectEqual('cliente do pedido', byId.customer.id, customer.id);
 
     // 4. Mesmo externalId de novo: 422, não cria outro pedido.
@@ -117,7 +135,7 @@ async function cleanup() {
 try {
     await main();
 } catch (cause) {
-    console.error(cause.message);
+    console.error(/** @type {Error} */ (cause).message);
     process.exitCode = 1;
 } finally {
     await cleanup();

@@ -1,7 +1,15 @@
+// @ts-check
 import { amountRules, defaultsRules, externalIdRules, issue } from './cupom-regras.mjs';
+
+/** @typedef {import('../../scripts/validate.mjs').Issue} Issue */
+/** @typedef {import('./cupom-regras.mjs').CouponPayload} CouponPayload */
 
 const MAX_INT = 2147483647;
 
+/**
+ * @param {CouponPayload} payload
+ * @returns {Issue[]}
+ */
 function sharedExternalIdRules(payload) {
     const value = payload.externalId;
     if (value === undefined || value === null || value === '' || payload.createOnProvider === true) return [];
@@ -18,7 +26,12 @@ function sharedExternalIdRules(payload) {
     return [];
 }
 
+/**
+ * @param {CouponPayload} payload
+ * @returns {Issue[]}
+ */
 function sharedRules(payload) {
+    /** @type {Issue[]} */
     const issues = [];
     if (typeof payload.amount === 'number' && !Number.isInteger(payload.amount)) {
         issues.push(issue('warning', 'amount', `o compartilhado guarda amount arredondado para inteiro: ${payload.amount} não é preservado (12.75 vira 13, 12.5 vira 12)`));
@@ -28,6 +41,10 @@ function sharedRules(payload) {
     return issues;
 }
 
+/**
+ * @param {CouponPayload} payload
+ * @returns {Issue[]}
+ */
 export default function rules(payload) {
     return [...externalIdRules(payload), ...sharedExternalIdRules(payload), ...amountRules(payload), ...defaultsRules(payload), ...sharedRules(payload)];
 }

@@ -102,11 +102,12 @@ teste, defina `ZOPPY_SMOKE_ALLOW_PRODUCTION=1`.
 npm test          # testes das ferramentas
 npm run build     # gera scripts/validate.mjs em cada skill a partir de tools/validate.mjs
 npm run check     # confere formato, segredos e cópias do validador
+npm run typecheck # confere os tipos (JSDoc + // @ts-check) com tsc; precisa de npm install, que instala typescript e @types/node
 ```
 
 Não edite `skills/*/scripts/validate.mjs`: ele é gerado. A fonte é `tools/validate.mjs`.
 
-O `npm install` ativa um hook de pre-commit (`.githooks/pre-commit`) que roda `npm run check`, `npm test` e, se estiverem instalados, `claude plugin validate` e `agy plugin validate`. Um commit que deixe o plugin fora do formato é bloqueado.
+O `npm install` ativa um hook de pre-commit (`.githooks/pre-commit`) que roda `npm run check`, `npm run typecheck`, `npm test` e, se estiverem instalados, `claude plugin validate` e `agy plugin validate`. Um commit que deixe o plugin fora do formato é bloqueado.
 
 ### Evals
 

@@ -1,3 +1,4 @@
+// @ts-check
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -10,11 +11,16 @@ const dir = join(here, 'fixtures', 'schemas');
 const cli = join(here, '..', 'validate.mjs');
 const ok = { externalId: 'p-1', subtotal: 10 };
 
+/**
+ * @param {string[]} args
+ * @returns {{ code: number | null, out: string }}
+ */
 function run(args) {
     try {
         return { code: 0, out: execFileSync('node', [cli, `--schemas-dir=${dir}`, ...args], { encoding: 'utf8' }) };
     } catch (e) {
-        return { code: e.status, out: `${e.stdout}${e.stderr}` };
+        const failure = /** @type {{ status: number | null, stdout: string, stderr: string }} */ (e);
+        return { code: failure.status, out: `${failure.stdout}${failure.stderr}` };
     }
 }
 
@@ -91,6 +97,7 @@ test('CLI: --file inexistente é uso incorreto com mensagem, sem stack', () => {
 
 const couponSchemas = join(here, '..', '..', 'skills', 'zoppy-partners-cupons-webhooks', 'assets', 'schemas');
 const coupon = { externalId: 'c-1', code: 'C1', type: 'percent', amount: 10, minPurchaseValue: 0, expiryDate: '2026-12-31T23:59:59-03:00', awaitingOrder: false };
+/** @type {(r: import('../validate.mjs').ValidationResult) => string[]} */
 const phoneWarnings = (r) => r.issues.filter((i) => i.field === 'phone').map((i) => i.message);
 
 test('cupom: celular de 10 dígitos sem o 9 avisa com o telefone do cadastro do cliente', async () => {

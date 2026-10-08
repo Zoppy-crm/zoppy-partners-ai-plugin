@@ -1,3 +1,4 @@
+// @ts-check
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -9,6 +10,10 @@ import { spawnSync } from 'node:child_process';
 const smoke = join(dirname(fileURLToPath(import.meta.url)), '..', 'smoke.mjs');
 const env = { ...process.env, ZOPPY_PARTNERS_TOKEN: 't', ZOPPY_ACCESS: 'a', ZOPPY_PARTNERS_BASE_URL: 'http://x' };
 
+/**
+ * @param {Record<string, string>} files
+ * @returns {string}
+ */
 function repoWith(files) {
     const root = mkdtempSync(join(tmpdir(), 'smoke-'));
     for (const [path, content] of Object.entries(files)) {

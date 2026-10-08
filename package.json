@@ -11,6 +11,11 @@
     "build": "node tools/build.mjs",
     "check": "node tools/build.mjs --check",
     "smoke": "node tools/smoke.mjs",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "prepare": "git config core.hooksPath .githooks || true",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/node": "18.19.130",
+    "typescript": "7.0.2"
   }
 }

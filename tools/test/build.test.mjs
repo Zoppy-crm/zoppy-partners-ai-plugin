@@ -1,3 +1,4 @@
+// @ts-check
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cpSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
@@ -9,6 +10,13 @@ import { lintSkill } from '../build.mjs';
 
 const toolsDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 
+/**
+ * @param {string} root
+ * @param {string} name
+ * @param {string} frontmatter
+ * @param {string} [body]
+ * @returns {string}
+ */
 function makeSkill(root, name, frontmatter, body = 'Corpo.') {
     const dir = join(root, 'skills', name);
     mkdirSync(join(dir, 'assets', 'schemas'), { recursive: true });
@@ -16,6 +24,7 @@ function makeSkill(root, name, frontmatter, body = 'Corpo.') {
     return dir;
 }
 
+/** @returns {string} */
 function makeRepo() {
     const root = mkdtempSync(join(tmpdir(), 'zp-'));
     cpSync(toolsDir, join(root, 'tools'), { recursive: true });
