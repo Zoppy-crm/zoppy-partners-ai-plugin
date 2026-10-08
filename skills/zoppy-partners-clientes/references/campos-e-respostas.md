@@ -8,7 +8,7 @@ Todas as rotas que devolvem cliente (`GET`, `POST`, `PUT`) usam este formato:
 {
   "id": "1a817ffb-1b5a-46ee-9d4a-7198213e5985",
   "externalId": "cli-456",
-  "email": "skills-test+1@zoppy.com.br",
+  "email": "skills-test+1@example.com",
   "phone": "11900001001",
   "firstName": "João Pedro",
   "lastName": "Da Silva",
@@ -54,7 +54,7 @@ Na resposta do `POST`, campos que você não mandou podem vir ausentes em vez de
 | `"firstName": "joão  pedro"` | `"João Pedro"` |
 | `"lastName": "DA silva"` | `"Da Silva"` |
 | `"firstName": ""` | `""` (aceito) |
-| `"email": " Skills-Test+5@Zoppy.com.br "` | igual, com espaços e maiúsculas |
+| `"email": " Skills-Test+5@Example.com "` | igual, com espaços e maiúsculas |
 | `"email": "nao-e-email"` | `"nao-e-email"` |
 | `"gender": "m"` | `"M"` |
 | `"birthDate": "1990-05-15"` | `"1990-05-15T00:00:00.000Z"` |

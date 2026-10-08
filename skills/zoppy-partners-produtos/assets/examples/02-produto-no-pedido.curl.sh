@@ -48,7 +48,7 @@ for _ in $(seq 1 20); do
 done
 [ -n "$PHONE" ] || { echo "não achei telefone de teste livre" >&2; exit 1; }
 
-CUSTOMER=$(zoppy POST /customers "{\"externalId\":\"$RUN_ID-cliente\",\"firstName\":\"Skills\",\"lastName\":\"Produtos\",\"phone\":\"$PHONE\",\"email\":\"skills-test+${PHONE: -4}@zoppy.com.br\",\"address\":{\"address1\":\"Rua Teste 1\",\"city\":\"Sao Paulo\",\"state\":\"SP\",\"postcode\":\"01001000\"}}")
+CUSTOMER=$(zoppy POST /customers "{\"externalId\":\"$RUN_ID-cliente\",\"firstName\":\"Skills\",\"lastName\":\"Produtos\",\"phone\":\"$PHONE\",\"email\":\"skills-test+${PHONE: -4}@example.com\",\"address\":{\"address1\":\"Rua Teste 1\",\"city\":\"Sao Paulo\",\"state\":\"SP\",\"postcode\":\"01001000\"}}")
 expect "cliente criado é o nosso" "$(echo "$CUSTOMER" | field externalId)" "$RUN_ID-cliente"
 CUSTOMER_ID=$(echo "$CUSTOMER" | field id)
 

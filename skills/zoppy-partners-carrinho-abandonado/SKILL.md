@@ -107,7 +107,7 @@ Para conferir um envio, compare `total` e `discount`, não `subtotal` e `shippin
      anteriores ao inválido. Refaça o `PUT` com a lista certa.
    `lineItems` `null` ou `""` é aceito como carrinho sem itens; item com `productId` `null` é
    descartado sem erro.
-4. **`PUT` exige a chave `url`.** Sem ela o `PUT` responde 500 e nada muda. Com `url` `""` ou só
+4. **`PUT` exige a chave `url`.** Mande sempre a chave `url` no `PUT`. Com `url` `""` ou só
    espaços o `PUT` responde 200 e apaga o link de recuperação.
 5. **`PUT` substitui os itens.** Os itens atuais são apagados e trocados pela lista enviada; sem
    `lineItems` o carrinho fica sem itens. Mande sempre a lista completa.

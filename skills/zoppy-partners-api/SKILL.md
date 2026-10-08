@@ -45,6 +45,9 @@ schema nem validador: para validar um corpo de requisição, use o validador da 
 | Produção | `https://api-partners.zoppy.com.br` |
 | Staging (homologação) | `https://api-partners-staging.zoppy.com.br` |
 
+O token e a chave `zoppy-access` de staging são diferentes dos de produção: peça os dois ao time
+da Zoppy.
+
 - As rotas ficam direto na raiz, sem prefixo `/api` e sem versão: `GET {base}/customers`.
   `GET {base}/api/customers` e `GET {base}/v1/customers` respondem
   `404 {"message":"Cannot GET /api/customers...","error":"Not Found","statusCode":404}`.
@@ -75,8 +78,8 @@ Regras práticas:
 - O token identifica a empresa. Não existe parâmetro de empresa: tudo que você lê e grava fica
   na empresa dona do token. `GET {base}/companies` devolve a empresa do token e serve como
   teste de credencial.
-- O token não expira por tempo: ele não carrega data de expiração e um token emitido em 2025
-  continua aceito. Não implemente renovação de token.
+- Não há fluxo de renovação de token: não implemente refresh. Se o token vazar, peça a
+  revogação ao time da Zoppy.
 
 ## Formato das requisições e respostas
 
@@ -130,7 +133,7 @@ Todas as listagens (`GET /customers`, `/products`, `/orders`, `/abandoned-carts`
 |---|---|---|---|
 | `after` | sim | data; traz registros com data de criação maior ou igual | `Invalid after date` (ausente ou inválida) |
 | `page` | sim | número inteiro, começa em 1 | `Page parameter is required`, `Page needs to be bigger than 0` |
-| `pageSize` | sim | número inteiro de 1 a 50 (decimal, ex. `2.5`, dá 500) | `Page size parameter is required`, `Page size needs to be bigger than 0`, `Page size needs to be less than or equal 50` |
+| `pageSize` | sim | número inteiro de 1 a 50 | `Page size parameter is required`, `Page size needs to be bigger than 0`, `Page size needs to be less than or equal 50` |
 | `updatedAt` | não | data; traz só registros atualizados a partir dela | `Invalid updatedAt date` |
 
 Por que `GET /products` sem `after` responde 422: `after` é obrigatório em toda listagem e é
@@ -178,8 +181,8 @@ de textos em erros de validação de campo.
   [references/erros.md](references/erros.md).
 - Quando a regra tem mais de um problema, as mensagens vêm juntas no mesmo texto, separadas
   por vírgula (ex. `"User email already in use., Password does not attend security standarts."`).
-- 40 requisições paralelas foram atendidas sem 429. A API não publica limite de taxa; se receber
-  429, espere e tente de novo com intervalo crescente.
+- Limite o paralelismo da sua carga. Se receber 429, espere e tente de novo com intervalo
+  crescente.
 
 Catálogo completo com corpos reais em [references/erros.md](references/erros.md).
 

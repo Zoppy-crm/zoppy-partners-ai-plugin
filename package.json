@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "test": "node --test tools/test/*.test.mjs",
     "build": "node tools/build.mjs",
     "check": "node tools/build.mjs --check",
-    "smoke": "node tools/smoke.mjs"
+    "smoke": "node tools/smoke.mjs",
+    "prepare": "git config core.hooksPath .githooks || true"
   }
 }

@@ -101,7 +101,7 @@ A resposta do `PUT` trouxe `updatedAt` `17:44:34` e o `GET` logo depois trouxe `
 | `GET /customers/{id}` depois | 422 `Customer not found` |
 | `DELETE /customers/{id}` de novo | 404 `{"message":"Customer not found","error":"Not Found","statusCode":404}` |
 | `POST` com o mesmo telefone depois | 200 com id novo |
-| `POST` com o mesmo telefone depois de excluir o cliente logo após criar um pedido concluído para ele | 200 com id novo e o seu `externalId`, mas `address` é o endereço antigo (`"address1":"Rua Orfa Rapida, 1"`); o `address` enviado foi ignorado |
+| `POST` com o mesmo telefone depois (em alguns casos) | 200 com id novo e o seu `externalId`, mas `address` é o endereço do cadastro excluído; o `address` enviado foi ignorado |
 
 ## Cliente e pedido
 

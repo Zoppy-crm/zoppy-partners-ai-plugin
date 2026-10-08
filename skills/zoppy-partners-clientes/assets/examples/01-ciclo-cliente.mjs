@@ -52,7 +52,7 @@ try {
     // 1. Criar. Telefone com máscara e 55: a API grava só DDD + número.
     const created = await zoppy('POST', '/customers', {
         externalId: runId,
-        email: 'skills-test+1@zoppy.com.br',
+        email: 'skills-test+1@example.com',
         phone: `+55 (${phone.slice(0, 2)}) ${phone.slice(2, 7)}-${phone.slice(7)}`,
         firstName: 'maria',
         lastName: 'DA silva',
@@ -86,7 +86,7 @@ try {
     expectEqual('sobrenome atualizado', updated.lastName, 'Souza');
     expectEqual('cidade atualizada', updated.address.city, 'Campinas');
     expectEqual('latitude gravada no PUT', updated.address.latitude, -22.9);
-    expectEqual('e-mail mantido', updated.email, 'skills-test+1@zoppy.com.br');
+    expectEqual('e-mail mantido', updated.email, 'skills-test+1@example.com');
     expectEqual('complemento mantido', updated.address.address2, 'Apto 42');
     expectEqual('gênero mantido', updated.gender, 'F');
 

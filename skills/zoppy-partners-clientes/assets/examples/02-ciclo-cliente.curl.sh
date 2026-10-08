@@ -39,7 +39,7 @@ trap cleanup EXIT
 # 1. Criar
 CREATED=$(api POST /customers "{
   \"externalId\": \"$RUN_ID\",
-  \"email\": \"skills-test+2@zoppy.com.br\",
+  \"email\": \"skills-test+2@example.com\",
   \"phone\": \"55$PHONE\",
   \"firstName\": \"Ana\",
   \"lastName\": \"Lima\",
@@ -66,7 +66,7 @@ api PUT "/customers/$CUSTOMER_ID" "{
 UPDATED=$(api GET "/customers/$CUSTOMER_ID")
 expect "sobrenome" "$(echo "$UPDATED" | field lastName)" "Lima Costa"
 expect "cidade" "$(echo "$UPDATED" | field address.city)" "Olinda"
-expect "e-mail mantido" "$(echo "$UPDATED" | field email)" "skills-test+2@zoppy.com.br"
+expect "e-mail mantido" "$(echo "$UPDATED" | field email)" "skills-test+2@example.com"
 
 # 5. Excluir e conferir
 expect "exclusão" "$(api DELETE "/customers/$CUSTOMER_ID" | field result)" "true"

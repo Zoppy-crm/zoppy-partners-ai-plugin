@@ -57,10 +57,8 @@ considera só a validade. `externalId` volta como número.
 
 ## 4. Casos de borda provados
 
-- Busca por `externalId` olha primeiro os individuais e depois os compartilhados. Como o
-  compartilhado guarda `externalId` como inteiro, enquanto existir um compartilhado com
-  `externalId` `0` na conta, buscar por um texto que não existe nos individuais devolve esse
-  compartilhado. Sem ele, a busca dá 404.
+- Busca por `externalId` olha primeiro os individuais e depois os compartilhados. O compartilhado
+  guarda `externalId` como inteiro: para cupom compartilhado, consulte pelo `code`.
 - `externalId` não é único: dois compartilhados com o mesmo número são aceitos, e um individual e
   um compartilhado com o mesmo valor também; a busca devolve o individual.
 - "Mais recente" (em `GET /coupons/phone/{phone}`, `PUT /coupons/phone/{phone}` e no cupom
@@ -79,6 +77,5 @@ considera só a validade. `externalId` volta como número.
 - Pedido com `couponCode` de cupom individual existente marca o cupom como usado e, se o pedido
   veio com `discount` 0, a Zoppy grava o desconto calculado pelo cupom (10% de 50 vira 5).
 - Com `awaitingOrder` `true`, um pedido do mesmo telefone sem `couponCode` recebe o cupom
-  aguardando mais recente, sem conferir validade nem uso: no teste, um cupom com data inválida
-  foi consumido no lugar de um válido mais antigo, e um cupom já usado foi aplicado a um segundo
-  pedido. `PUT {"used": true, "awaitingOrder": false}` impede isso.
+  aguardando mais recente. Registre com `awaitingOrder: false` o cupom resgatado só pelo código e
+  baixe com `PUT {"used": true, "awaitingOrder": false}`.

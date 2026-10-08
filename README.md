@@ -70,7 +70,7 @@ cp .env.example .env   # preencha e carregue no seu shell
 |---|---|
 | `ZOPPY_PARTNERS_TOKEN` | Token da sua empresa (vai em `Authorization: Bearer`) |
 | `ZOPPY_ACCESS` | Valor do header `zoppy-access` |
-| `ZOPPY_PARTNERS_BASE_URL` | `https://api-partners-staging.zoppy.com.br` (testes) ou `https://api-partners.zoppy.com.br` |
+| `ZOPPY_PARTNERS_BASE_URL` | `https://api-partners-staging.zoppy.com.br` (homologação, com token e chave próprios) ou `https://api-partners.zoppy.com.br` |
 
 ## Validar um payload
 
@@ -89,7 +89,10 @@ npm run smoke                                   # todos
 node tools/smoke.mjs --skill=zoppy-partners-pedidos
 ```
 
-Os exemplos criam dados com o prefixo `skills-test-` e apagam o que criaram. Use uma conta de teste.
+Os exemplos criam dados com o prefixo `skills-test-` e apagam o que criaram. Use uma conta de teste
+sem fluxos de mensagem ativos: pedidos e carrinhos disparam os fluxos da conta, e a limpeza não
+desfaz mensagem já enviada. O smoke recusa rodar contra a URL de produção; para isso numa conta de
+teste, defina `ZOPPY_SMOKE_ALLOW_PRODUCTION=1`.
 
 ## Desenvolvimento
 
@@ -100,6 +103,8 @@ npm run check     # confere formato, segredos e cópias do validador
 ```
 
 Não edite `skills/*/scripts/validate.mjs`: ele é gerado. A fonte é `tools/validate.mjs`.
+
+O `npm install` ativa um hook de pre-commit (`.githooks/pre-commit`) que roda `npm run check`, `npm test` e, se estiverem instalados, `claude plugin validate` e `agy plugin validate`. Um commit que deixe o plugin fora do formato é bloqueado.
 
 ### Evals
 

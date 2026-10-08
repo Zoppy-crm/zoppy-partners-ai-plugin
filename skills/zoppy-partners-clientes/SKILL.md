@@ -41,7 +41,7 @@ O `POST` responde 200, não 201. A busca por id, externalId ou telefone responde
 | `phone` | string | sim | Normaliza para DDD + número, sem 55. É a chave de deduplicação do `POST`. Número JSON responde 400 |
 | `firstName` | string | sim | Grava com a inicial de cada palavra em maiúscula e o resto em minúscula |
 | `lastName` | string | sim | Igual ao `firstName` |
-| `address` | objeto | sim | Sem ele: `POST` responde 422 `Address is required`; `PUT` responde 500 |
+| `address` | objeto | sim | Também no `PUT`. Sem ele, o `POST` responde 422 `Address is required` |
 | `externalId` | string | não | Seu id. Não evita duplicata no `POST`. Sem ele, a resposta traz o id da Zoppy em `externalId` |
 | `email` | string | não | Gravado como veio: sem validar formato, sem `trim`, sem minúsculas |
 | `birthDate` | string | não | `YYYY-MM-DD` ou ISO 8601. Texto que não vira data responde 400 |
@@ -76,7 +76,7 @@ Só existe telefone brasileiro. Número estrangeiro que caiba no formato é acei
 | Telefone já cadastrado (em qualquer formato) | 200 com o cliente **existente**: mesmo id, sem alterar nome, e-mail, endereço nem `externalId` |
 | Mesmo `externalId`, telefone diferente | Cria **outro** cliente. Depois disso, `GET /customers/external/{externalId}` devolve só um deles, sem garantia de qual |
 | Mesmo e-mail, telefone diferente | Cria outro cliente |
-| Telefone de um cliente já excluído | Cria cliente novo, com id novo. Se o endereço do cliente excluído ainda existir (aconteceu ao excluir o cliente logo depois de criar um pedido concluído para ele), o cliente novo fica com esse endereço antigo e o `address` enviado é ignorado |
+| Telefone de um cliente já excluído | Cria cliente novo, com id novo. Confira o `address` da resposta: ele pode vir com o endereço do cadastro excluído, e nesse caso o `address` enviado foi ignorado |
 
 Por isso, para sincronizar, faça upsert:
 

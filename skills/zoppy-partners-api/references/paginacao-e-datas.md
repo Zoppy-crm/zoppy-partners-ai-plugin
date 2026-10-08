@@ -10,7 +10,7 @@
 
 ## Listagem completa sem duplicar
 
-Toda listagem pede `after`, `page` e `pageSize` (inteiros; `pageSize` de 1 a 50, decimal dá 500). A ordem dos itens não é por data, então
+Toda listagem pede `after`, `page` e `pageSize` (inteiros; `pageSize` de 1 a 50). A ordem dos itens não é por data, então
 junte por `id`:
 
 ```js

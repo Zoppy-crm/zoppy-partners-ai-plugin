@@ -88,3 +88,25 @@ test('CLI: --file inexistente é uso incorreto com mensagem, sem stack', () => {
     assert.match(result.out, /não foi possível ler --file=nao-existe\.json \(ENOENT\)/);
     assert.doesNotMatch(result.out, /at readFileSync/);
 });
+
+const couponSchemas = join(here, '..', '..', 'skills', 'zoppy-partners-cupons-webhooks', 'assets', 'schemas');
+const coupon = { externalId: 'c-1', code: 'C1', type: 'percent', amount: 10, minPurchaseValue: 0, expiryDate: '2026-12-31T23:59:59-03:00', awaitingOrder: false };
+const phoneWarnings = (r) => r.issues.filter((i) => i.field === 'phone').map((i) => i.message);
+
+test('cupom: celular de 10 dígitos sem o 9 avisa com o telefone do cadastro do cliente', async () => {
+    const r = await validate('cupom.create', { ...coupon, phone: '1190007400' }, couponSchemas);
+    assert.equal(r.valid, true);
+    const [message] = phoneWarnings(r);
+    assert.match(message, /celular com 8 dígitos/);
+    assert.match(message, /11990007400/);
+});
+
+test('cupom: celular com o 9 e fixo de 10 dígitos não avisam', async () => {
+    assert.deepEqual(phoneWarnings(await validate('cupom.create', { ...coupon, phone: '11990007400' }, couponSchemas)), []);
+    assert.deepEqual(phoneWarnings(await validate('cupom.create', { ...coupon, phone: '1133334444' }, couponSchemas)), []);
+});
+
+test('cupom: 55 na frente e celular sem o 9 também avisa', async () => {
+    const [message] = phoneWarnings(await validate('cupom.create', { ...coupon, phone: '551190007400' }, couponSchemas));
+    assert.match(message, /11990007400/);
+});

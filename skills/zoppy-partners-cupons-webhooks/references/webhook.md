@@ -22,7 +22,7 @@ registra um cupom com `POST /coupons` ou `POST /coupons/shared`, e não depende 
 |---|---|---|
 | `POST /webhooks` | `{"event":"coupon_create","url":"https://...","bearerToken":"..."}` | 200 com o cadastro (`id`, `event`, `url`, `bearerToken`, `userId`, `companyId`, datas) |
 | `POST /webhooks` de novo, mesmo evento | idem | Mesmo `id`; `url` e `bearerToken` substituídos (ausente apaga o token) |
-| `GET /webhooks` | | Lista dos cadastros da conta, `[]` se nenhum; `bearerToken` em texto |
+| `GET /webhooks` | | Lista dos cadastros da conta, `[]` se nenhum |
 | `PUT /webhooks/{id}` | `event` e `url` obrigatórios, `bearerToken` opcional | 200 com o cadastro atualizado |
 | `DELETE /webhooks/{id}` | | 200 `{"result":true}`; some da lista |
 
@@ -67,9 +67,8 @@ você já processou. Responda 2xx assim que receber e processe depois.
    `minPurchaseValue`, `expiryDate`, `acumulative`, `isValid` e `customer`. O cupom já está
    disponível nessas consultas segundos depois do pedido que o gerou.
 3. Crie o cupom no seu sistema com esses valores. `acumulative: false` significa não combinar com
-   outras promoções. `used: null` significa não usado. Faça o seu checkout cobrar
-   `minPurchaseValue` e a validade: a Zoppy não confere o mínimo quando o pedido chega com
-   `couponCode`.
+   outras promoções. `used: null` significa não usado. Mínimo de compra e validade são aplicados
+   no seu checkout: faça-o cobrar `minPurchaseValue` e a validade.
 4. Devolva o seu ID: `PUT /coupons/code/{code}` com `{"externalId":"<seu id>"}`.
 5. Quando o cliente usar o cupom, mande o pedido com `couponCode` (skill zoppy-partners-pedidos).
 

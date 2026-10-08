@@ -12,7 +12,7 @@ FAIL se falta qualquer critério de acerto ou se aparece qualquer erro que repro
 - Busca primeiro por `GET {base}/abandoned-carts/external/{cart.id}`; 404 significa criar, 200 significa atualizar.
 - Cria com `POST /abandoned-carts` levando `externalId: cart.id`, `customerId`, `createdAt: cart.abandonedAt`.
 - Atualiza com `PUT /abandoned-carts/{id}` usando o `id` Zoppy devolvido pela busca, não o `externalId`.
-- No PUT manda `url` não vazia (sem a chave a API responde 500; vazia apaga o link), `subtotal`, `discount` e `shipping`, e a **lista completa** de `lineItems` (o PUT substitui os itens).
+- No PUT manda `url` não vazia (a chave é obrigatória no PUT; vazia apaga o link), `subtotal`, `discount` e `shipping`, e a **lista completa** de `lineItems` (o PUT substitui os itens).
 - Trata 500 no PUT como gravação parcial (valores trocados, itens antigos apagados) e refaz o PUT com a lista certa, em vez de assumir que nada mudou.
 - `subtotal = productsTotal + shipping` nos dois casos; `discount` e `shipping` sempre presentes (0 quando não houver).
 - Não manda `externalId`, `customerId` nem `createdAt` esperando que o PUT os altere.

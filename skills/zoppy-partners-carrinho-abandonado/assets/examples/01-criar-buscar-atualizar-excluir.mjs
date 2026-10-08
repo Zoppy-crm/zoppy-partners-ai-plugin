@@ -54,7 +54,7 @@ async function createCustomer(lastName) {
         firstName: 'Teste',
         lastName,
         phone,
-        email: `skills-test+${phone.slice(-4)}@zoppy.com.br`,
+        email: `skills-test+${phone.slice(-4)}@example.com`,
         address: { address1: 'Rua Exemplo 1', city: 'Sao Paulo', state: 'SP', postcode: '01001000' }
     });
     if (customer.externalId !== `${runId}-cliente`) throw new Error(`o telefone ${phone} caiu no cliente ${customer.id}, que não é deste exemplo`);

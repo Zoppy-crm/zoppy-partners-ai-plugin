@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 // Roda os exemplos das skills contra uma conta da Partners API.
+// Use uma conta de teste sem fluxos de mensagem ativos: pedidos e carrinhos disparam os fluxos da conta.
+// Contra a URL de produção, só roda com ZOPPY_SMOKE_ALLOW_PRODUCTION=1.
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const REQUIRED_ENV = ['ZOPPY_PARTNERS_TOKEN', 'ZOPPY_ACCESS', 'ZOPPY_PARTNERS_BASE_URL'];
+const PRODUCTION_HOST = 'api-partners.zoppy.com.br';
 
 function examplesOf(skillDir) {
     const dir = join(skillDir, 'assets', 'examples');
@@ -23,10 +26,27 @@ function selectedSkills(root, only) {
     return readdirSync(skills).filter((name) => !only || name === only).sort().map((name) => join(skills, name));
 }
 
+function hostOf(url) {
+    try {
+        return new URL(url).hostname.toLowerCase();
+    } catch {
+        return '';
+    }
+}
+
+function isBlockedProduction(env) {
+    return hostOf(env.ZOPPY_PARTNERS_BASE_URL) === PRODUCTION_HOST && env.ZOPPY_SMOKE_ALLOW_PRODUCTION !== '1';
+}
+
 function main(argv) {
     const missing = REQUIRED_ENV.filter((name) => !process.env[name]);
     if (missing.length) {
         console.error(`Defina as variáveis de ambiente: ${missing.join(', ')}`);
+        process.exitCode = 2;
+        return;
+    }
+    if (isBlockedProduction(process.env)) {
+        console.error('O smoke cria pedidos e carrinhos que disparam os fluxos da conta. Rode em staging, ou defina ZOPPY_SMOKE_ALLOW_PRODUCTION=1 numa conta de teste sem fluxos de mensagem ativos.');
         process.exitCode = 2;
         return;
     }

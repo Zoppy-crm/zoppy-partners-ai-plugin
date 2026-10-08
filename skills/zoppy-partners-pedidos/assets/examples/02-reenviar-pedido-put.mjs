@@ -57,7 +57,7 @@ async function main() {
         firstName: 'Skills',
         lastName: 'Pedidos',
         phone,
-        email: `skills-test+${phone.slice(-4)}@zoppy.com.br`,
+        email: `skills-test+${phone.slice(-4)}@example.com`,
         address: { address1: 'Rua Teste 1', city: 'Sao Paulo', state: 'SP', postcode: '01001000' }
     });
     expectEqual('cliente criado é o nosso', customer.externalId, `${runId}-cliente`);
