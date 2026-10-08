@@ -5,4 +5,4 @@ max_turns: 15
 allowed_tools: [Read, Glob, Grep, Skill]
 ---
 
-Escreva um script Node que busca na Zoppy, pela Partners API, todos os clientes cadastrados desde 01/09/2026 e grava num arquivo JSON. Use as variáveis de ambiente da Zoppy.
+Escreva um script Node que busca na Zoppy, pela Partners API, todos os clientes cadastrados desde 01/09/2026 e grava num arquivo JSON. Use as variáveis de ambiente da Zoppy. Mostre o código completo na resposta.

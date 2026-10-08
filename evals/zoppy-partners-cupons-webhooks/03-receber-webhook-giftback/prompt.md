@@ -9,4 +9,4 @@ A Zoppy gera giftback para os nossos clientes depois do pedido pago. Quero receb
 nosso PDV automaticamente. Monte o cadastro do webhook (nosso endpoint é
 https://pdv.exemplo.com.br/zoppy/cupons, protegido por token) e o handler Express que recebe a
 chamada e cria o cupom no PDV com a função `criarCupomPdv({codigo, valor, tipo, minimo, validade,
-acumula})`, que devolve o ID do PDV.
+acumula})`, que devolve o ID do PDV. Mostre o código completo na resposta.

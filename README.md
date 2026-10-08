@@ -112,12 +112,33 @@ O `npm install` ativa um hook de pre-commit (`.githooks/pre-commit`) que roda `n
 
 `evals/<skill>/<caso>/` segue o formato do `claude plugin eval`: `prompt.md` traz o pedido do desenvolvedor e
 `graders/` traz os critérios (`criterios.md`, julgado por modelo) e a conferência de que a skill certa foi acionada
-(`skill-acionada.md`). Cada execução chama o modelo e tem custo.
+(`skill-acionada.md`). Nos casos que montam payload, `validador.md` confere no transcript que o agente rodou
+`validate.mjs` com o `--schema` certo (grader `tool_used` em `Bash`, sem juiz). Ele precisa de
+`--allow-tools Bash`: sem isso o agente não tem terminal e esse grader sempre falha. Ele vale só no braço com
+o plugin (`arm: with-only`), porque sem o plugin não existe validador para rodar. Cada execução chama o modelo
+e tem custo.
 
 ```bash
-claude plugin eval . --runs 1                     # todos os casos, com e sem o plugin
-claude plugin eval . --tag zoppy-partners-pedidos  # só uma skill
+claude plugin eval . --runs 1 --allow-tools Bash                     # todos os casos, com e sem o plugin
+claude plugin eval . --allow-tools Bash --tag zoppy-partners-pedidos  # só uma skill
 ```
+
+Com `--allow-tools Bash`, cada comando roda no sandbox do Claude Code (`bubblewrap` e `socat` no Linux): sem
+rede e sem escrita fora do diretório do caso. No Ubuntu 24.04 ou mais novo, o AppArmor bloqueia o namespace de
+usuário que o `bwrap` cria. Sem um perfil para ele, o runner sobe sem erro e o agente fica sem terminal. Crie
+`/etc/apparmor.d/bwrap` com este conteúdo e carregue com `sudo apparmor_parser -r /etc/apparmor.d/bwrap`:
+
+```
+abi <abi/4.0>,
+include <tunables/global>
+
+profile bwrap /usr/bin/bwrap flags=(unconfined) {
+  userns,
+  include if exists <local/bwrap>
+}
+```
+
+Para conferir: `bwrap --ro-bind / / --unshare-net true && echo BWRAP_OK`.
 
 O resultado fica em `evals/results/`, que não é versionado.
 

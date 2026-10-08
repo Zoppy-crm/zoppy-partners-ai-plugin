@@ -2,7 +2,7 @@
 description: "cupom compartilhado de campanha"
 tags: [zoppy-partners-cupons-webhooks]
 max_turns: 15
-allowed_tools: [Read, Glob, Grep, Skill]
+allowed_tools: [Read, Glob, Grep, Skill, Bash]
 ---
 
 Quero cadastrar na Zoppy o cupom BLACK15, 15% de desconto, para qualquer cliente, limitado a
