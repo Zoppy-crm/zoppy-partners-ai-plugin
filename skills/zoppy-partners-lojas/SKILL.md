@@ -7,7 +7,7 @@ description: "Cadastra e reaproveita lojas na Partners API da Zoppy (/stores) e 
 
 **Regras fixas desta skill** (valem em toda tarefa, mesmo curta):
 1. Antes de entregar código ou de chamar a API, rode você mesmo, no terminal, `node <pasta desta skill>/scripts/validate.mjs --schema=loja.create` (ou `loja.update`) em cada corpo de loja, e o validador de `zoppy-partners-pedidos` no pedido, e leia cada `ERRO` e `AVISO`. Não deixe essa etapa para o usuário.
-2. Em teste, `externalId` e `name` da loja levam o prefixo do usuário inteiro; no fim, apague só as lojas que você criou, pelo `id` guardado no cadastro; nunca apague loja por filtro de nome ou código, porque outra integração pode usar código parecido.
+2. Em teste, `externalId` e `name` da loja levam o prefixo do usuário inteiro; no fim, apague só as lojas que você criou, pelo `id` guardado no cadastro; nunca apague loja por filtro de nome ou código, porque outra integração pode usar código parecido. Se a execução quebrou antes de guardar o `id`, ache a loja com `GET /stores/external/{externalId}` exato, nunca filtrando a listagem.
 3. Nunca decida sozinho qual loja existente é uma filial: procure na listagem pelo nome ou pelo código que o usuário deu (sem diferenciar maiúsculas e acentos), ou pergunte, e diga no relatório qual loja reaproveitou.
 4. Para corrigir a loja de um pedido recém-criado, espere alguns segundos depois do `POST` antes do `PUT`: um `PUT` logo em seguida pode ser desfeito.
 5. Releia com `GET /orders/{id}` o que gravou e repita o `PUT` se a loja não mudou.
