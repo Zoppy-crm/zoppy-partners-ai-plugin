@@ -35,6 +35,17 @@
       ],
       "description": "Exatamente um destes, em minúsculas"
     },
+    "subStatus": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "delivered",
+        null
+      ],
+      "description": "Etapa depois do pagamento: só delivered (pedido entregue), e só junto com status completed. Dispara o gatilho Entregue dos fluxos. No PUT, ausente mantém o gravado e null limpa"
+    },
     "subtotal": {
       "type": "number",
       "description": "Valor antes do desconto, já com o frete (itens + shipping)"

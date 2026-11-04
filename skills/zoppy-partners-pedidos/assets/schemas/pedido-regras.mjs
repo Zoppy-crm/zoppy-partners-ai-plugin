@@ -4,7 +4,7 @@
 // o integrador costuma não esperar.
 
 const KNOWN_FIELDS = [
-    'externalId', 'customerId', 'couponCode', 'storeId', 'store', 'status', 'subtotal', 'discount', 'shipping',
+    'externalId', 'customerId', 'couponCode', 'storeId', 'store', 'status', 'subStatus', 'subtotal', 'discount', 'shipping',
     'lineItems', 'createdAt', 'completedAt', 'updatedAt', 'seller', 'userId', 'provider', 'createCoupon', 'orderFromZoppy'
 ];
 const UPDATE_IGNORED = ['externalId', 'customerId'];
@@ -22,6 +22,7 @@ const UPDATE_IGNORED = ['externalId', 'customerId'];
  *     storeId?: string,
  *     store?: OrderStore,
  *     status: string,
+ *     subStatus?: string | null,
  *     subtotal: number,
  *     discount?: number,
  *     shipping?: number,
@@ -78,6 +79,15 @@ function checkStatus(payload, mode) {
     if (payload.status !== 'processing') return [];
     const effect = mode === 'create' ? 'no POST a API grava on-hold' : 'no PUT a API grava processing como veio';
     return [warning('status', `processing: ${effect}. Use on-hold para aguardando pagamento e completed para pago ou confirmado`)];
+}
+
+/**
+ * @param {OrderPayload} payload
+ * @returns {Issue[]}
+ */
+function checkSubStatus(payload) {
+    if (payload.subStatus !== 'delivered' || payload.status === 'completed') return [];
+    return [error('subStatus', `delivered com status ${payload.status}: 422 subStatus requires status completed e nada é gravado. Marque como entregue só o pedido completed (pago ou confirmado)`)];
 }
 
 /**
@@ -225,6 +235,7 @@ export function orderRules(payload, mode) {
         ...checkMissingValues(payload),
         ...checkTotal(payload),
         ...checkStatus(payload, mode),
+        ...checkSubStatus(payload),
         ...checkDates(payload, mode),
         ...checkStore(payload, mode),
         ...checkCoupon(payload),
