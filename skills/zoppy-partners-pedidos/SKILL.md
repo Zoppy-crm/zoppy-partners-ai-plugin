@@ -1,6 +1,6 @@
 ---
 name: zoppy-partners-pedidos
-description: "Envia pedidos para a Partners API da Zoppy (/orders) com o total e as datas que a Zoppy espera. Use ao gerar código que cria, reenvia (PUT), busca, lista ou exclui pedidos; ao montar subtotal, discount e shipping (não existe campo total); ao escolher o status (completed, on-hold, canceled, processing); ao decidir createdAt e completedAt; ao ligar itens e cupom usado ao pedido; e ao investigar total negativo, frete descontado duas vezes, pedido fora do período da venda ou itens que sumiram. Gatilhos em inglês: send orders to Zoppy, create or update order, order total, subtotal with shipping, order status, order createdAt, order line items. Não use para autenticação e paginação (veja a skill zoppy-partners-api), cliente (zoppy-partners-clientes), produto (zoppy-partners-produtos), carrinho abandonado (zoppy-partners-carrinho-abandonado), cupons e webhooks (zoppy-partners-cupons-webhooks), loja do pedido (zoppy-partners-lojas) ou vendedor do pedido (zoppy-partners-vendedores)."
+description: "Envia pedidos para a Partners API da Zoppy (/orders) com o total e as datas que a Zoppy espera. Use ao gerar código que cria, reenvia (PUT), busca, lista ou exclui pedidos; ao montar subtotal, discount e shipping (não existe campo total); ao escolher o status (completed, on-hold, canceled, processing) ou marcar entregue (subStatus); ao decidir createdAt e completedAt; ao ligar itens e cupom usado ao pedido; e ao investigar total negativo, frete descontado duas vezes, pedido fora do período da venda ou itens que sumiram. Gatilhos em inglês: send orders to Zoppy, create or update order, order total, subtotal with shipping, order status, order createdAt, order line items. Não use para autenticação e paginação (veja a skill zoppy-partners-api), cliente (zoppy-partners-clientes), produto (zoppy-partners-produtos), carrinho abandonado (zoppy-partners-carrinho-abandonado), cupons e webhooks (zoppy-partners-cupons-webhooks), loja do pedido (zoppy-partners-lojas) ou vendedor do pedido (zoppy-partners-vendedores)."
 ---
 
 # Pedidos na Partners API da Zoppy
@@ -74,6 +74,16 @@ Aceita exatamente, em minúsculas: `completed` (pago ou confirmado), `on-hold` (
 - `processing` no `POST` é gravado como `on-hold`. No `PUT` fica `processing`. Use `on-hold`.
 - `completedAt` só é gravado com status `completed`; com outro status ele vira `null`.
 - `completed` sem `completedAt`: no `POST` o pedido fica sem `completedAt`; no `PUT` a API mantém o `completedAt` anterior.
+
+### Pedido entregue: `subStatus`
+
+Para marcar o pedido como entregue ao cliente, envie `subStatus: "delivered"` junto com `status: "completed"`. É o que dispara o gatilho **Entregue** dos fluxos de automação no painel; o status continua `completed`.
+
+- Uso típico: `completed` quando o pedido é pago ou confirmado e, quando ele for entregue, um `PUT /orders/{id}` com o pedido inteiro, `status: "completed"` e `subStatus: "delivered"`. O pedido entra no fluxo de Entregue uma vez só; reenviar o `delivered` não dispara de novo.
+- Só `delivered` é aceito. Outro valor responde `422 Invalid subStatus`.
+- `delivered` com status diferente de `completed` responde `422 subStatus requires status completed` e nada é gravado. Pedido com pagamento na entrega fica `on-hold` até o pagamento ser lançado; só depois marque como entregue.
+- No `PUT`: `subStatus` ausente mantém o valor gravado, `null` apaga o `delivered`, e um status diferente de `completed` também apaga.
+- A resposta e o `GET` trazem `subStatus` (`delivered` ou `null`).
 
 ## Datas: `createdAt` é a data da venda
 

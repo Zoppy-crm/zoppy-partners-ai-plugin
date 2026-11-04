@@ -16,6 +16,7 @@
 | `externalId` | string | não, mas envie | Seu id do pedido. Repetido na conta responde 422 `External id already exists`. Sem ele, cada POST cria um pedido novo. Número JSON responde 400 |
 | `customerId` | string | sim | Id da Zoppy do cliente. Ausente responde 400; inexistente, excluído ou com o `externalId` do cliente responde 422 `Customer not found` |
 | `status` | string | sim | `completed`, `on-hold`, `canceled` ou `processing`, em minúsculas. Outro valor ou ausente: 422 `Invalid status`. `processing` é gravado como `on-hold` |
+| `subStatus` | string ou `null` | não | Só `delivered` (pedido entregue), e só com status `completed`; dispara o gatilho Entregue dos fluxos. Outro valor: 422 `Invalid subStatus`. Com outro status: 422 `subStatus requires status completed` |
 | `subtotal` | number | sim | Itens + frete, antes do desconto. Texto ou ausente: 400 |
 | `discount` | number | não, mas envie | Desconto sobre os produtos. Ausente: total gravado 0 |
 | `shipping` | number | não, mas envie | Frete cobrado. Frete grátis é 0. Ausente: total gravado 0 |
@@ -41,6 +42,7 @@ Os mesmos campos, menos `externalId` e `customerId`, que são ignorados se viere
 | Campo | No PUT |
 |---|---|
 | `status` | `processing` fica `processing` |
+| `subStatus` | Ausente: mantém o gravado. `null`: apaga o `delivered`. Status diferente de `completed`: apaga o `delivered` |
 | `discount`, `shipping` | Ausente: total gravado 0, e o campo ausente mantém o valor antigo |
 | `createdAt` | Ausente: vira o `completedAt` enviado; sem os dois, mantém a data atual |
 | `completedAt` | Status `completed` sem `completedAt`: mantém o anterior. Outro status: `null` |
@@ -78,6 +80,7 @@ POST, PUT e GET devolvem o mesmo formato:
 | `id` | Id da Zoppy do pedido (use no PUT e no DELETE) |
 | `externalId` | Seu id |
 | `status` | Status gravado |
+| `subStatus` | `delivered` ou `null` |
 | `total` | `subtotal - discount - shipping` enviados (produtos com desconto, sem frete) |
 | `subtotal` | Recalculado: `total + discount + shipping` |
 | `discount`, `shipping` | Gravados |

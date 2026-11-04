@@ -34,6 +34,8 @@
 | Situação | `message` |
 |---|---|
 | Status fora de `completed`, `on-hold`, `canceled`, `processing` (inclui `cancelled`, `Completed`, `pending`) ou ausente | `Invalid status` |
+| `subStatus` diferente de `delivered` (ex.: `shipped`, `Delivered`) | `Invalid subStatus` |
+| `subStatus: delivered` com status diferente de `completed`. Nada é gravado | `subStatus requires status completed` |
 | `externalId` já usado por outro pedido da conta (POST) | `External id already exists` |
 | `customerId` inexistente, de cliente excluído ou com o `externalId` do cliente (POST) | `Customer not found` |
 | `storeId` que não existe na conta | `Store not found for this company (storeId: <id>)` |
@@ -71,6 +73,7 @@ São os casos que mais causam dado errado, porque não dão erro:
 | `05/09/2026` | Lido como 9 de maio |
 | `status: processing` no POST | Gravado `on-hold` |
 | `completedAt` com status diferente de `completed` | Descartado |
+| PUT de pedido entregue com status diferente de `completed` | `subStatus` apagado (`delivered` vira `null`) |
 | `lineItems` com `productId` inexistente ou com o `externalId` do produto | Item descartado |
 | `quantity: 1.5` | Gravado 2 |
 | `items` em vez de `lineItems` | Ignorado: pedido sem itens |
