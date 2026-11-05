@@ -11,7 +11,7 @@
 ## Listagem completa sem duplicar
 
 Toda listagem pede `after`, `page` e `pageSize` (inteiros; `pageSize` de 1 a 50). A ordem dos itens não é por data, então
-junte por `id`:
+junte por `id` (exceção: `GET /coupons` ordena por `createdAt` e `id`, mas junte por `code` mesmo assim, veja a skill zoppy-partners-cupons-webhooks):
 
 ```js
 async function listAll(resource, after) {
