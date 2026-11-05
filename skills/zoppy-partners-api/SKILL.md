@@ -134,7 +134,9 @@ Detalhe e provas em [references/paginacao-e-datas.md](references/paginacao-e-dat
 ## Paginação
 
 Todas as listagens (`GET /customers`, `/products`, `/orders`, `/abandoned-carts`, `/stores`,
-`/users`, `/nps`, `/campaigns`) usam os mesmos parâmetros:
+`/users`, `/nps`, `/campaigns`, `/coupons`) usam os mesmos parâmetros. Só `GET /coupons` fixa a
+ordem (`createdAt` crescente e, no empate, `id`); nas outras a ordem não é garantida. Em `/coupons`
+ainda assim junte por `code` (upsert), como a skill zoppy-partners-cupons-webhooks descreve:
 
 | Parâmetro | Obrigatório | Regra | Erro (422) quando falha |
 |---|---|---|---|
