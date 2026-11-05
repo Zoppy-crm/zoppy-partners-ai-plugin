@@ -1,6 +1,6 @@
 ---
 name: zoppy-partners-cupons-webhooks
-description: "Registra na Partners API da Zoppy o cupom criado no sistema do parceiro (POST /coupons individual ligado a telefone, POST /coupons/shared compartilhado com limite de uso), busca, atualiza e exclui cupom, lê o cupom que um fluxo de automação da Zoppy gerou para um pedido (giftback) e cadastra a URL que recebe o webhook coupon_create. Use ao gerar código de cupom, ao depurar 422 de cupom (código já usado, Id externo, celular inválido), cupom compartilhado achado pelo externalId errado, cupom baixado sozinho por um pedido, webhook que não chega ou bearerToken. Gatilhos: cupom Zoppy, giftback, coupon_create, webhook Zoppy, cupom compartilhado, couponCode, coupons-config; em inglês: Zoppy coupon, shared coupon, coupon webhook, giftback webhook. Não use para autenticação, paginação e formato de erro (zoppy-partners-api) nem para montar o pedido que usa o cupom (zoppy-partners-pedidos)."
+description: "Registra na Partners API da Zoppy o cupom criado no sistema do parceiro (POST /coupons individual ligado a telefone, POST /coupons/shared compartilhado com limite de uso), busca, atualiza e exclui cupom, lê o cupom que um fluxo de automação da Zoppy gerou para um pedido (giftback), lista os cupons individuais disponíveis da conta para importar os que já existiam (GET /coupons) e cadastra a URL que recebe o webhook coupon_create. Use ao gerar código de cupom, ao depurar 422 de cupom (código já usado, Id externo, celular inválido), cupom compartilhado achado pelo externalId errado, cupom baixado sozinho por um pedido, importação inicial de cupons, webhook que não chega ou bearerToken. Gatilhos: cupom Zoppy, giftback, coupon_create, webhook Zoppy, cupom compartilhado, couponCode, coupons-config; em inglês: Zoppy coupon, shared coupon, coupon webhook, giftback webhook. Não use para autenticação, paginação e formato de erro (zoppy-partners-api) nem para montar o pedido que usa o cupom (zoppy-partners-pedidos)."
 ---
 
 # Cupons e webhooks na Partners API da Zoppy
@@ -61,6 +61,7 @@ limpeza, junto com os cupons que você criou.
 |---|---|
 | `POST /coupons` | Registrar cupom individual (ligado a um telefone) |
 | `POST /coupons/shared` | Registrar cupom compartilhado (sem cliente, com limite de uso) |
+| `GET /coupons?after=YYYY-MM-DD&page=1&pageSize=50` | Listar os cupons individuais disponíveis da conta, para importar os que já existiam (`updatedAt` opcional) |
 | `GET /coupons/{id}`, `GET /coupons/code/{code}`, `GET /coupons/external/{externalId}` | Buscar um cupom, individual ou compartilhado |
 | `GET /coupons/order/{orderId}` | Cupom que a Zoppy gerou a partir de um pedido |
 | `GET /coupons/phone/{phone}` | Cupom individual não usado e não vencido mais recente do telefone |
@@ -251,6 +252,21 @@ Authorization: Bearer <bearerToken>     (só se você cadastrou bearerToken)
   `used: true` e não é aplicado de novo depois.
 - Depois de criar do seu lado, devolva o seu ID com `PUT /coupons/code/{code}` e
   `{"externalId": "..."}`; a partir daí `GET /coupons/external/{externalId}` encontra o cupom.
+
+### Importar os cupons que já existiam (`GET /coupons`)
+
+O webhook só avisa dos cupons criados depois do cadastro da URL. Na hora da integração, chame
+`GET /coupons?after=YYYY-MM-DD&page=1&pageSize=50` uma vez, de página em página, para importar os cupons
+individuais que a conta já tinha; a partir daí, receba os novos pelo webhook.
+
+- Lista só os cupons individuais disponíveis: não usados e não vencidos (cupom com `startDate` futuro
+  entra). Compartilhados (`/coupons/shared`) não entram.
+- `after` é obrigatório e filtra `createdAt` maior ou igual à data; `page` começa em 1, `pageSize` vai de 1
+  a 50 e `updatedAt` é opcional. Parâmetro inválido dá 422. Ordem: `createdAt` crescente e, no empate, `id`.
+- Resposta `{ pagination: { page, pageSize, totalRecords, totalPages }, data: [...] }`; cada item tem o
+  mesmo formato de `GET /coupons/{id}`.
+- A paginação é por página sobre um filtro que muda: um cupom usado durante a importação sai da lista e
+  desloca as páginas seguintes. Rode uma **segunda passada** alguns minutos depois e faça upsert por `code`.
 
 Mais detalhes em [references/webhook.md](references/webhook.md).
 

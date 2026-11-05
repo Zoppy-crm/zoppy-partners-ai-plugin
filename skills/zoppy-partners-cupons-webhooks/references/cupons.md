@@ -25,6 +25,8 @@
 | `customer` | Cliente com o mesmo telefone, se existir (ausente na resposta do `POST`) |
 | `createdAt`, `updatedAt` | ISO 8601 em UTC |
 
+`GET /coupons` (lista) devolve, em `data`, itens neste mesmo formato, dentro de `{ pagination, data }`.
+
 Número enviado como texto (`"amount": "15.90"`) é aceito; a resposta do `POST` repete o texto e
 as consultas devolvem número (`15.9`). Com `externalId` numérico no individual é o contrário: a
 resposta do `POST` repete o número e as consultas devolvem texto (`987654` vira `"987654"`).
