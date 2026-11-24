@@ -24,19 +24,20 @@ relatório no painel da Zoppy.
 | `metricsStatus` | Significa | `metrics` |
 |---|---|---|
 | `AVAILABLE` | o relatório foi gerado | objeto (no detalhe) |
-| `PENDING` | campanha em envio, concluída há menos de 8 dias, ou relatório sendo gerado | `null` |
+| `PENDING` | campanha em envio, concluída há menos de 8 dias, relatório sendo gerado ou que falhou e vai ser refeito, ou falha temporária ao ler o relatório | `null` |
 | `UNAVAILABLE` | canal sem relatório (só `whatsapp`, `email` e `sms` têm), campanha que falhou, concluída há mais de 180 dias sem relatório, ou relatório com mais de 365 dias (retenção) | `null` |
 
 O relatório é gerado 8 dias depois da conclusão, para contar os pedidos que chegam depois do envio,
 e não muda mais. Na listagem, `AVAILABLE` é calculado sem ler o relatório. Se a leitura falhar no
-detalhe, o detalhe responde `200` com `UNAVAILABLE` e `metrics: null`, sem erro.
+detalhe, o detalhe responde `200` com `PENDING` e `metrics: null`, sem erro (ou `UNAVAILABLE`, se o
+arquivo do relatório não existir mais).
 
 ## Campos de metrics
 
 Comuns a todos os canais: `reportGeneratedAt`, `targetGroupCount`, `sentCount`, `deliveredCount`,
 `undeliveredCount`, `failedCount`, `suppressedCount`, `ordersCount` (pedidos atribuídos à campanha),
-`influencedRevenue` (receita desses pedidos) e `averageTicket`. Os dois valores em dinheiro vêm arredondados em
-centavos. No SMS, `deliveredCount` é sempre 0: o canal não confirma entrega.
+`influencedRevenue` (receita desses pedidos) e `averageTicket`. Os dois valores em dinheiro vêm em reais, com duas
+casas decimais. No SMS, `deliveredCount` é sempre 0: o canal não confirma entrega.
 
 Por canal (os blocos dos outros canais vêm `null`):
 
@@ -64,7 +65,8 @@ relatório de performance da campanha no painel (o mesmo snapshot que a API lê)
 2. Chame `GET /campaigns/{id}` só para as campanhas com `metricsStatus: AVAILABLE` que você ainda não
    guardou. Guarde `metrics` no seu sistema: o número não muda depois de gerado, então não chame o
    detalhe de novo para a mesma campanha.
-3. Nas próximas rodadas, volte só às campanhas que estavam `PENDING`. `UNAVAILABLE` não muda.
+3. Nas próximas rodadas, volte às campanhas que estavam `PENDING` (inclusive as que voltaram do detalhe
+   como `PENDING`). Campanha `UNAVAILABLE` só muda em caso raro, não precisa ser consultada de novo.
 
 ```js
 async function syncCampaignMetrics(stored) {
