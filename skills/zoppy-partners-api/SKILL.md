@@ -1,6 +1,6 @@
 ---
 name: zoppy-partners-api
-description: "Explica o que vale para todos os recursos da Partners API da Zoppy e indica a skill de cada um: autenticação com Authorization Bearer mais o header zoppy-access, URLs base, paginação (after, page, pageSize), datas ISO 8601 e fuso, formato de erro, ordem de envio e idempotência. Use antes de escrever código que chama a Partners API e ao depurar 401, 403 com página HTML, 422 Invalid after date, datas gravadas 3 horas fora ou paginação que pula registros. Gatilhos: Partners API Zoppy, integrar com a Zoppy, token da Zoppy, zoppy-access, Just a moment, listar clientes Zoppy, paginação Zoppy, ordem de envio; em inglês: Zoppy Partners API authentication, pagination, error format, integration order. Não use para os campos de cada recurso: clientes em zoppy-partners-clientes, produtos em zoppy-partners-produtos, pedidos em zoppy-partners-pedidos, lojas em zoppy-partners-lojas, vendedores em zoppy-partners-vendedores, carrinho em zoppy-partners-carrinho-abandonado, cupons e webhooks em zoppy-partners-cupons-webhooks."
+description: "Explica o que vale para todos os recursos da Partners API da Zoppy e indica a skill de cada um: autenticação com Authorization Bearer mais o header zoppy-access, URLs base, paginação, datas ISO 8601 e fuso, formato de erro, ordem de envio e idempotência. Use antes de escrever código que chama a Partners API e ao depurar 401, 403 com página HTML, 422 Invalid after date, datas gravadas 3 horas fora ou paginação que pula registros. Gatilhos: Partners API Zoppy, integrar com a Zoppy, token da Zoppy, zoppy-access, Just a moment, listar clientes Zoppy, paginação Zoppy, ordem de envio, métricas de campanha; em inglês: Zoppy Partners API authentication, pagination, error format, integration order. Não use para os campos de cada recurso: clientes em zoppy-partners-clientes, produtos em zoppy-partners-produtos, pedidos em zoppy-partners-pedidos, lojas em zoppy-partners-lojas, vendedores em zoppy-partners-vendedores, carrinho em zoppy-partners-carrinho-abandonado, cupons e webhooks em zoppy-partners-cupons-webhooks."
 ---
 
 # Partners API da Zoppy: visão geral e roteamento
@@ -239,7 +239,8 @@ carrinho como "já foi": busque o registro por `GET /orders/external/{externalId
 | Vendedores e o vendedor do pedido | `/users` | zoppy-partners-vendedores |
 | Carrinho abandonado | `/abandoned-carts` | zoppy-partners-carrinho-abandonado |
 | Cupons e webhooks | `/coupons`, `/coupons-config`, `/webhooks` | zoppy-partners-cupons-webhooks |
-| NPS, campanhas, empresa, campos personalizados | `/nps`, `/campaigns`, `/companies`, `/custom-field` | fora do escopo destas skills; veja a doc pública da Partners API |
+| Campanhas e métricas de performance (aberturas, cliques, leituras, respostas, pedidos, receita) | `/campaigns` | esta skill, [references/campanhas.md](references/campanhas.md) |
+| NPS, empresa, campos personalizados | `/nps`, `/companies`, `/custom-field` | fora do escopo destas skills; veja a doc pública da Partners API |
 
 ## Exemplos
 
