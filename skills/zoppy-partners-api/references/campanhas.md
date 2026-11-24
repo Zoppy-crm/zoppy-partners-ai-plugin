@@ -25,7 +25,7 @@ relatório no painel da Zoppy.
 |---|---|---|
 | `AVAILABLE` | o relatório foi gerado | objeto (no detalhe) |
 | `PENDING` | campanha em envio, concluída há menos de 8 dias, ou relatório sendo gerado | `null` |
-| `UNAVAILABLE` | canal sem relatório (só `whatsapp`, `email` e `sms` têm), campanha que falhou, ou concluída há mais de 180 dias sem relatório | `null` |
+| `UNAVAILABLE` | canal sem relatório (só `whatsapp`, `email` e `sms` têm), campanha que falhou, concluída há mais de 180 dias sem relatório, ou relatório com mais de 365 dias (retenção) | `null` |
 
 O relatório é gerado 8 dias depois da conclusão, para contar os pedidos que chegam depois do envio,
 e não muda mais. Na listagem, `AVAILABLE` é calculado sem ler o relatório. Se a leitura falhar no
@@ -35,7 +35,8 @@ detalhe, o detalhe responde `200` com `UNAVAILABLE` e `metrics: null`, sem erro.
 
 Comuns a todos os canais: `reportGeneratedAt`, `targetGroupCount`, `sentCount`, `deliveredCount`,
 `undeliveredCount`, `failedCount`, `suppressedCount`, `ordersCount` (pedidos atribuídos à campanha),
-`influencedRevenue` (receita desses pedidos) e `averageTicket`.
+`influencedRevenue` (receita desses pedidos) e `averageTicket`. Os dois valores em dinheiro vêm arredondados em
+centavos. No SMS, `deliveredCount` é sempre 0: o canal não confirma entrega.
 
 Por canal (os blocos dos outros canais vêm `null`):
 
@@ -45,9 +46,17 @@ Por canal (os blocos dos outros canais vêm `null`):
 | `whatsapp` | `readCount`, `repliedCount` (respostas dentro de `replyWindowHours` horas), `replyRate` (`repliedCount / deliveredCount`, de 0 a 1), `replyWindowHours` |
 | `sms` | `clickedCount` (cliques nos links rastreados), `hasTrackedLinks` (quando `false`, `clickedCount` é sempre 0) |
 
-A API devolve contagens (exceto `replyRate`); as taxas se calculam no seu sistema. Para bater com a
-tela de métricas da campanha no painel, divida por `sentCount`: taxa de abertura de e-mail =
-`openedCount / sentCount`, taxa de clique = `clickedCount / sentCount`.
+A API devolve contagens (exceto `replyRate`); as taxas se calculam no seu sistema. Para bater com o
+relatório de performance da campanha no painel (o mesmo snapshot que a API lê):
+
+| Taxa | Conta |
+|---|---|
+| Abertura de e-mail | `email.openedCount / deliveredCount` |
+| Clique de e-mail | `email.clickedCount / deliveredCount` |
+| Leitura de WhatsApp | `whatsapp.readCount / deliveredCount` |
+| Resposta de WhatsApp | `whatsapp.repliedCount / deliveredCount` (é o `replyRate`) |
+| Clique de SMS | `sms.clickedCount / sentCount` |
+| Entrega | `deliveredCount / sentCount` |
 
 ## Montar um painel com todas as campanhas
 
