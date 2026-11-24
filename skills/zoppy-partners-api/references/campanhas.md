@@ -66,7 +66,7 @@ relatório de performance da campanha no painel (o mesmo snapshot que a API lê)
    guardou. Guarde `metrics` no seu sistema: o número não muda depois de gerado, então não chame o
    detalhe de novo para a mesma campanha.
 3. Nas próximas rodadas, volte às campanhas que estavam `PENDING` (inclusive as que voltaram do detalhe
-   como `PENDING`). Campanha `UNAVAILABLE` só muda em caso raro, não precisa ser consultada de novo.
+   como `PENDING`). Campanha `UNAVAILABLE` não volta a ter métricas e não precisa ser consultada de novo.
 
 ```js
 async function syncCampaignMetrics(stored) {

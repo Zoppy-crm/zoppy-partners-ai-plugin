@@ -10,7 +10,7 @@ traz exemplos executáveis e um validador de payload que a IA roda antes de devo
 
 | Skill | Use para |
 |---|---|
-| `zoppy-partners-api` | Autenticação, ambientes, paginação, datas, erros e ordem de envio. Comece por aqui. |
+| `zoppy-partners-api` | Autenticação, ambientes, paginação, datas, erros e ordem de envio. Também campanhas e as métricas de performance de cada uma (aberturas, cliques, leituras, respostas, pedidos e receita). Comece por aqui. |
 | `zoppy-partners-clientes` | Criar, atualizar e buscar clientes; telefone, endereço e deduplicação. |
 | `zoppy-partners-produtos` | Criar, atualizar e buscar produtos; vínculo com os itens do pedido. |
 | `zoppy-partners-pedidos` | Pedidos: status, `subtotal`/`discount`/`shipping`, datas, reenvio pelo `PUT`. |
